@@ -1,42 +1,48 @@
-# COMP4020 prototype
+# COMP4020 — Crit 4 prototype
 
-Your starter repo for a COMP4020 prototype: a static site in HTML/CSS/TypeScript
-that builds to plain HTML/CSS/JS and deploys to GitHub Pages. The deployed site
-is what gets marked, not this repo.
+A static, client-side **musical instrument** built with HTML/CSS/TypeScript on
+Astro, deployed to GitHub Pages. Sound is synthesised live in the page by the
+player. The **deployed URL** is what's marked — live in Chrome, at **1920×1080**
+and **390×844**, both in full.
 
-The
-[course website](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/)
-publishes this deliverable's brief and spec, and this repo's name tells you
-which deliverable applies. Read both before you plan or build.
+## Read AGENTS.md first
 
-## How to work in here
+`AGENTS.md` is the operating harness: the working loop, the sensors `pnpm check`
+runs, what to do when a check goes red, the hard constraints, and the harness
+log that grows as the work corrects itself. **Read it before planning or
+building.** Operating rules live there and only there, so this file and that one
+never drift — this file is the map, `AGENTS.md` is how the work is run.
 
-- Keep the dev server running (`pnpm dev`) so you see changes as you make them.
-- Run `pnpm check` before you push.
-- Open the page in a browser and look at it. The rendered page is the truth;
-  your mental model of it isn't.
-- When a check fails, read its output before you change anything.
-- Never commit a red state.
+## Where things live
+
+- `AGENTS.md` — the operating harness (read first)
+- `spec/` — invariants plus this week's spec tests; `spec/README.md` explains
+  how the checks map to the brief and spec
+- `PROCESS.md` — the reading-guide to the process evidence, each moment cited to
+  a commit (`pnpm check:evidence` verifies the citations resolve)
+- `reflections/crit-4.md` — the reflection, due at the cutoff; no file, no
+  shipped week
+- `src/pages/` — every `.astro` route is a page the build picks up;
+  `src/layouts/Layout.astro` owns the shared `<head>`
 
 ## The link-preview card
 
-`public/card.png` (1200x630) is the image a shared link shows; `index.html`'s
-head points at it. Replace it and the `description` meta, and copy the head
-block into any new page. The card URL resolves against the page that names it,
-like any link --- `./card.png` is wrong one directory down, and nothing in CI
-checks it, so look at the deployed head when you add pages.
+`public/card.png` (1200×630) is the image a shared link shows, and
+`src/layouts/Layout.astro` points at it. Replace it and the page's
+`description`. Every page gets the head through that layout, so there is no head
+block to copy by hand — but nothing in CI checks the card resolves, so look at
+the deployed head when you add pages. The layout builds the URL absolute from
+`BASE_URL`; `AGENTS.md` says why a relative one silently breaks.
 
-## The checks
+## Critical reminders (detail is in AGENTS.md)
 
-`pnpm check` runs them (`pnpm check:evidence` is the extra gate before you
-ship); CI runs the same plus links, secrets and the deploy. Read the failure.
-
-`spec/README.md`, `PROCESS.md` and `reflections/README.md` are in this repo and
-say what they are for.
-
-## This file is yours
-
-A starting point, not a rulebook. As you learn what your prototype needs --- a
-convention the work has to hold to, a sensor that keeps catching you out (a
-linter, say), a fact about the stack that is easy to get wrong --- write it down
-here and wire it into `check`. Growing this file is the work.
+- **Never commit secrets.** No keys, tokens, or passwords in tracked files; the
+  pre-commit hook is the sensor that matters. If one leaks, rotate it.
+- **Commit when checks pass; never commit a red state.** The trail is the
+  evidence, so grow it in small, honest steps.
+- **Verify against the rendered page**, not your mental model of it — use
+  `agent-browser` to look at the real output before believing a change worked.
+  This week, verify by **listening** too: no sensor hears the instrument.
+- **No em-dashes, no "--", no AI-isms** in anything shipped or written.
+- **No identity files.** No name, student number, or personal profile in this
+  repo; the marker already knows whose it is, and it goes public when shipped.
