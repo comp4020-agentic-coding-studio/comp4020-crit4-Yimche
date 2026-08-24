@@ -116,6 +116,97 @@ header nav {
   pointer-events: none;
 }
 
+/* House controls in the top-left, tucked just under the title over the empty
+   gallery seats: Load a premade tune, Clear the stage. Small pixel buttons in
+   the transport's own idiom so they read as part of the same console. */
+.stage-tools {
+  position: absolute;
+  top: 15%;
+  left: 3%;
+  z-index: 6;
+  display: flex;
+  gap: 0.3rem;
+}
+
+.tool {
+  font-family: var(--retro);
+  font-size: clamp(0.34rem, 1vw, 0.5rem);
+  color: var(--text);
+  background: var(--panel-2);
+  border: var(--pixel) solid var(--line);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 var(--line);
+  padding: 0.4rem 0.5rem;
+  min-height: 30px;
+  cursor: pointer;
+}
+
+.tool:hover,
+.tool:focus-visible {
+  color: var(--ink);
+  background: var(--hue-lead);
+}
+
+.tool:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* The track picker: a pop-up list under the Load button, in the transport's
+   dark-panel idiom. Absolutely placed off the tools row so the list overlays
+   the seats rather than shoving the stage around. */
+.tune-menu[hidden] {
+  display: none;
+}
+
+.tune-menu {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  z-index: 7;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0.3rem;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  border: var(--pixel) solid var(--hue-lead);
+  box-shadow: var(--pixel) var(--pixel) 0 var(--line);
+  white-space: nowrap;
+}
+
+.tune-pick {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  font-family: var(--retro);
+  font-size: clamp(0.34rem, 1vw, 0.5rem);
+  color: var(--text);
+  background: var(--panel-2);
+  border: var(--pixel) solid var(--line);
+  border-radius: 0;
+  padding: 0.4rem 0.5rem;
+  min-height: 30px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tune-pick:hover,
+.tune-pick:focus-visible {
+  color: var(--ink);
+  background: var(--hue-lead);
+}
+
+.tune-pick .tune-bpm {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+.tune-pick:hover .tune-bpm,
+.tune-pick:focus-visible .tune-bpm {
+  color: var(--ink);
+}
+
 /* Musicians and conductor: absolutely placed, anchored by their inline
    left/bottom/width so they stand on the painted floor. */
 .group,
@@ -628,6 +719,15 @@ header nav {
   .podium .bpm {
     font-size: 0.42rem;
     min-width: 3.8rem;
+  }
+  /* On the narrow stage the title is bigger relative to the box, so drop the
+     tools a little to sit clear beneath it. */
+  .stage-tools {
+    top: 17%;
+  }
+  .tool {
+    padding: 0.3rem 0.4rem;
+    min-height: 28px;
   }
 }
 

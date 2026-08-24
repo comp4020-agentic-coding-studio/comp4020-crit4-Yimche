@@ -13,8 +13,13 @@ import { TUNES, applyTune } from "../src/lib/presets.ts";
 // audio, and can never disagree with what the stage actually sounds.
 
 describe("presets: the Load selection", () => {
-  it("offers a selection to load", () => {
-    expect(TUNES.length, "Load needs at least a couple of tunes").toBeGreaterThan(1);
+  it("offers a list of at least five tracks to pick from", () => {
+    expect(TUNES.length, "Load presents a list of tracks").toBeGreaterThanOrEqual(5);
+  });
+
+  it("gives every track a distinct name, so the picker is unambiguous", () => {
+    const names = new Set(TUNES.map((t) => t.name));
+    expect(names.size).toBe(TUNES.length);
   });
 
   it("every tune has a name and a sane tempo", () => {

@@ -12,6 +12,7 @@ import {
   toggle,
 } from "../lib/sequencer.ts";
 import { SECTIONS } from "../lib/instrument.ts";
+import { TUNES, applyTune } from "../lib/presets.ts";
 import { AudioEngine } from "../lib/audio.ts";
 
 let state = createState(DEFAULT_STEPS);
@@ -31,7 +32,10 @@ const editor = document.querySelector<HTMLElement>("[data-editor]");
 const editorTitle = document.querySelector<HTMLElement>("[data-editor-title]");
 
 const CONTROL =
-  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done]";
+  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done],[data-load],[data-clear],[data-tune]";
+
+const tuneMenu = document.querySelector<HTMLElement>("[data-tune-menu]");
+const loadBtn = document.querySelector<HTMLButtonElement>("[data-load]");
 
 async function activate(el: Element): Promise<void> {
   await engine.wake(); // any interaction is the user gesture the autoplay policy needs
@@ -70,6 +74,34 @@ async function activate(el: Element): Promise<void> {
     closeEditor();
     return;
   }
+  if (el.hasAttribute("data-load")) {
+    // Load opens the track picker rather than loading anything itself: the list
+    // is where the choice is made.
+    toggleTuneMenu();
+    return;
+  }
+  if (el instanceof HTMLElement && el.dataset.tune !== undefined) {
+    // A track was picked from the list: drop it onto every section, tempo and
+    // all, then close the menu.
+    const tune = TUNES[Number(el.dataset.tune)];
+    if (tune) {
+      state = applyTune(state, tune);
+      if (bpmLabel) bpmLabel.textContent = `${state.bpm} BPM`;
+      syncCells();
+      refreshLights();
+    }
+    closeTuneMenu();
+    return;
+  }
+  if (el.hasAttribute("data-clear")) {
+    closeTuneMenu();
+    // Sweep every part back to silence, keeping the current tempo so Clear is a
+    // blank grid rather than a full reset of the conductor's tempo too.
+    state = { ...createState(state.steps), bpm: state.bpm };
+    syncCells();
+    refreshLights();
+    return;
+  }
   if (el instanceof HTMLElement && el.dataset.tempo) {
     state = setTempo(state, state.bpm + Number(el.dataset.tempo));
     if (bpmLabel) bpmLabel.textContent = `${state.bpm} BPM`;
@@ -84,6 +116,18 @@ function dismissInvite(): void {
 function setPressed(el: Element, on: boolean): void {
   el.setAttribute("aria-pressed", String(on));
   el.classList.toggle("on", on);
+}
+
+// Repaint every grid cell from the model. Toggling one cell updates only that
+// button, but Load and Clear rewrite whole grids at once, so the whole rack has
+// to be brought back in step with the state, including the racks not on screen.
+function syncCells(): void {
+  for (const cell of document.querySelectorAll<HTMLElement>("[data-cell]")) {
+    const section = cell.dataset.section ?? "";
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    setPressed(cell, isActive(state, section, row, col));
+  }
 }
 
 function bounce(el: HTMLElement): void {
@@ -111,6 +155,29 @@ function closeTransportPanel(): void {
   document
     .querySelector<HTMLElement>("[data-conductor]")
     ?.setAttribute("aria-expanded", "false");
+}
+
+// ---- the track picker: Load's pop-up list of premade tunes ---------------
+
+function toggleTuneMenu(): void {
+  if (!tuneMenu) return;
+  if (tuneMenu.hasAttribute("hidden")) openTuneMenu();
+  else closeTuneMenu();
+}
+
+function openTuneMenu(): void {
+  if (!tuneMenu) return;
+  tuneMenu.removeAttribute("hidden");
+  loadBtn?.setAttribute("aria-expanded", "true");
+  tuneMenu.querySelector<HTMLElement>("[data-tune]")?.focus();
+}
+
+// A transient pop-up, not a permanent panel: picking a track, tapping away, or
+// Escape closes it, mirroring how the conductor's transport behaves.
+function closeTuneMenu(): void {
+  if (!tuneMenu || tuneMenu.hasAttribute("hidden")) return;
+  tuneMenu.setAttribute("hidden", "");
+  loadBtn?.setAttribute("aria-expanded", "false");
 }
 
 // ---- the music layer: hidden until a musician is picked -----------------
@@ -260,6 +327,15 @@ document.addEventListener("pointerdown", (event) => {
   ) {
     closeTransportPanel();
   }
+  // The track picker dismisses the same way: any tap that isn't the menu or the
+  // Load button that toggles it.
+  if (
+    target &&
+    !target.closest("[data-tune-menu]") &&
+    !target.closest("[data-load]")
+  ) {
+    closeTuneMenu();
+  }
   const el = target?.closest(CONTROL);
   if (el) {
     event.preventDefault(); // stop the trailing synthetic click double-firing
@@ -273,6 +349,11 @@ document.addEventListener("pointerdown", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && editor && !editor.hasAttribute("hidden")) {
     closeEditor();
+    return;
+  }
+  if (event.key === "Escape" && tuneMenu && !tuneMenu.hasAttribute("hidden")) {
+    closeTuneMenu();
+    loadBtn?.focus();
     return;
   }
   if (event.key === "Escape") closeTransportPanel();

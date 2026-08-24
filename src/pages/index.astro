@@ -2,6 +2,7 @@
 import Layout from "../layouts/Layout.astro";
 import { SECTIONS } from "../lib/instrument.ts";
 import { DEFAULT_BPM, DEFAULT_STEPS } from "../lib/sequencer.ts";
+import { TUNES } from "../lib/presets.ts";
 
 import stage from "../assets/art/stage.png";
 import stageFg from "../assets/art/stage-fg.png";
@@ -117,6 +118,46 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
       <!-- The show title hangs inside the proscenium, so it is positioned
            against the stage box (not the page) and holds at every viewport. -->
       <h1 class="show-title">8-Bit Orchestra</h1>
+
+      <!-- Top-left over the empty gallery seats, just under the title: two house
+           controls for the whole ensemble. Load opens a list of premade tracks
+           to pick from; picking one drops it onto every section and sets its
+           tempo. Clear sweeps every part back to silence. Both are data-play, so
+           a tap also wakes the audio context. -->
+      <div class="stage-tools" role="group" aria-label="Ensemble controls">
+        <button
+          class="tool"
+          data-load
+          data-play
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded="false"
+        >
+          Load
+        </button>
+        <button class="tool" data-clear data-play type="button">Clear</button>
+
+        <!-- The track picker: a pop-up list of premade tunes, opened by Load and
+             dismissed by picking one, tapping away, or Escape. Rendered from the
+             same TUNES the model loads, so the list can never drift from what
+             actually plays. -->
+        <div class="tune-menu" data-tune-menu role="menu" aria-label="Premade tracks" hidden>
+          {
+            TUNES.map((tune, i) => (
+              <button
+                class="tune-pick"
+                data-tune={i}
+                data-play
+                type="button"
+                role="menuitem"
+              >
+                <span class="tune-name">{tune.name}</span>
+                <span class="tune-bpm">{tune.bpm} BPM</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
 
       <!-- The lighting rig: one cone per performer, all hung from the same truss
            so they descend from a consistent height. Behind the performers. -->
