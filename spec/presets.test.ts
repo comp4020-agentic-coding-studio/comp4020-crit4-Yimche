@@ -6,7 +6,7 @@ import {
   createState,
 } from "../src/lib/sequencer.ts";
 import { SECTIONS } from "../src/lib/instrument.ts";
-import { TUNES, applyTune } from "../src/lib/presets.ts";
+import { TUNES, applyTune, serializeTune, tuneToSource } from "../src/lib/presets.ts";
 
 // The premade tunes behind the Load button. They are pure data over the same
 // grid model the sequencer plays, so they can be exercised without any DOM or
@@ -82,5 +82,39 @@ describe("presets: applying a tune", () => {
         expect(grid.length).toBe(section.rows);
       }
     }
+  });
+});
+
+describe("presets: saving the stage back to a tune", () => {
+  it("round-trips every tune: load it, read it back, and the grids match", () => {
+    for (const tune of TUNES) {
+      const loaded = applyTune(createState(), tune);
+      // Reading the live stage back out and re-loading it must land on the same
+      // grids and tempo, so Save is a faithful inverse of Load.
+      const reloaded = applyTune(createState(), serializeTune(loaded));
+      expect(reloaded.grids, `${tune.name} did not survive a save/reload`).toEqual(
+        loaded.grids,
+      );
+      expect(reloaded.bpm).toBe(tune.bpm);
+    }
+  });
+
+  it("leaves the name blank for the player to fill in", () => {
+    expect(serializeTune(applyTune(createState(), TUNES[0])).name).toBe("");
+  });
+
+  it("emits a source literal that reads back through applyTune, tempo and all", () => {
+    let state = createState();
+    state = { ...state, bpm: 137 };
+    state.grids.lead[0][0] = true;
+    state.grids.perc[2][4] = true;
+    const src = tuneToSource(state);
+    // The text is a paste-in TUNES entry: a blank name, the live tempo, and a
+    // rows block. Rebuild a Tune from the same serializer and confirm the text
+    // agrees with it line for line, so what the player copies is what plays.
+    expect(src).toContain('name: "",');
+    expect(src).toContain("bpm: 137,");
+    for (const line of serializeTune(state).rows.lead)
+      expect(src).toContain(`"${line}",`);
   });
 });

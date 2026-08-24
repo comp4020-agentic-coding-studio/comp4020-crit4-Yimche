@@ -136,6 +136,34 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
           Load
         </button>
         <button class="tool" data-clear data-play type="button">Clear</button>
+        <button
+          class="tool"
+          data-save
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+        >
+          Save
+        </button>
+
+        <!-- Save's pop-up: the current stage read back as a paste-in TUNES
+             entry. The textarea holds the exact source to drop into presets.ts,
+             pre-selected and copied to the clipboard on open; the name is left
+             blank for the player. Dismissed by tapping away or Escape, like the
+             track picker. -->
+        <div class="save-panel" data-save-panel role="dialog" aria-label="Copy this track" hidden>
+          <p class="save-hint" data-save-hint>
+            Paste this into the <code>TUNES</code> array in <code>presets.ts</code>.
+          </p>
+          <textarea
+            class="save-text"
+            data-save-text
+            readonly
+            rows="12"
+            spellcheck="false"
+            aria-label="Track source to copy"></textarea>
+          <button class="tune-pick save-copy" data-save-copy type="button">Copy</button>
+        </div>
 
         <!-- The track picker: a pop-up list of premade tunes, opened by Load and
              dismissed by picking one, tapping away, or Escape. Rendered from the

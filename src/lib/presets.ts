@@ -215,6 +215,38 @@ export const TUNES: readonly Tune[] = [
   },
 ];
 
+// Read the live grids back out as a Tune: the inverse of applyTune. Each
+// section's bottom-first rows are flipped to top-first "x"/"." text, so what
+// comes out drops straight back in through applyTune. Save uses this to hand a
+// player their current stage as a premade track; the name is theirs to fill in.
+export function serializeTune(state: SequencerState, name = ""): Tune {
+  const rows: Record<string, string[]> = {};
+  for (const section of SECTIONS) {
+    const grid = state.grids[section.id] ?? [];
+    rows[section.id] = Array.from({ length: section.rows }, (_, i) => {
+      // top line first: the highest-pitch row is the last one in the grid.
+      const row = grid[section.rows - 1 - i] ?? [];
+      return Array.from({ length: state.steps }, (_, c) => (row[c] ? "x" : ".")).join("");
+    });
+  }
+  return { name, bpm: state.bpm, rows };
+}
+
+// Format a live stage as a copy-paste Tune literal, matching the indentation of
+// the entries already in the TUNES array so it drops in cleanly right before the
+// closing bracket. The name is left blank for the player to name.
+export function tuneToSource(state: SequencerState, name = ""): string {
+  const tune = serializeTune(state, name);
+  const out = ["  {", `    name: ${JSON.stringify(tune.name)},`, `    bpm: ${tune.bpm},`, "    rows: {"];
+  for (const section of SECTIONS) {
+    out.push(`      ${section.id}: [`);
+    for (const line of tune.rows[section.id]) out.push(`        ${JSON.stringify(line)},`);
+    out.push("      ],");
+  }
+  out.push("    },", "  },");
+  return out.join("\n");
+}
+
 // Turn a tune into fresh grids for the current step count, mapping its
 // top-first text rows back onto the model's bottom-first rows (row 0 = lowest
 // pitch). Every section is rebuilt from scratch, so Load is a clean slate: any

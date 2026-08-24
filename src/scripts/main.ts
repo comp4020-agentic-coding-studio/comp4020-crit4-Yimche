@@ -13,7 +13,7 @@ import {
   toggle,
 } from "../lib/sequencer.ts";
 import { SECTIONS } from "../lib/instrument.ts";
-import { TUNES, applyTune } from "../lib/presets.ts";
+import { TUNES, applyTune, tuneToSource } from "../lib/presets.ts";
 import { AudioEngine } from "../lib/audio.ts";
 
 let state = createState(DEFAULT_STEPS);
@@ -33,10 +33,15 @@ const editor = document.querySelector<HTMLElement>("[data-editor]");
 const editorTitle = document.querySelector<HTMLElement>("[data-editor-title]");
 
 const CONTROL =
-  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done],[data-clear-part],[data-load],[data-clear],[data-tune]";
+  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done],[data-clear-part],[data-load],[data-clear],[data-save],[data-save-copy],[data-tune]";
 
 const tuneMenu = document.querySelector<HTMLElement>("[data-tune-menu]");
 const loadBtn = document.querySelector<HTMLButtonElement>("[data-load]");
+
+const savePanel = document.querySelector<HTMLElement>("[data-save-panel]");
+const saveBtn = document.querySelector<HTMLButtonElement>("[data-save]");
+const saveText = document.querySelector<HTMLTextAreaElement>("[data-save-text]");
+const saveHint = document.querySelector<HTMLElement>("[data-save-hint]");
 
 async function activate(el: Element): Promise<void> {
   await engine.wake(); // any interaction is the user gesture the autoplay policy needs
@@ -114,6 +119,15 @@ async function activate(el: Element): Promise<void> {
     syncCells();
     setLoadedTune(null); // a blank grid is no track
     refreshLights();
+    return;
+  }
+  if (el.hasAttribute("data-save")) {
+    // Save opens a panel holding the current stage as a paste-in TUNES entry.
+    toggleSavePanel();
+    return;
+  }
+  if (el.hasAttribute("data-save-copy")) {
+    void copySaveText();
     return;
   }
   if (el instanceof HTMLElement && el.dataset.tempo) {
@@ -213,6 +227,52 @@ function closeTuneMenu(): void {
   if (!tuneMenu || tuneMenu.hasAttribute("hidden")) return;
   tuneMenu.setAttribute("hidden", "");
   loadBtn?.setAttribute("aria-expanded", "false");
+}
+
+// ---- Save: the current stage read back as a paste-in TUNES entry --------
+
+function toggleSavePanel(): void {
+  if (!savePanel) return;
+  if (savePanel.hasAttribute("hidden")) openSavePanel();
+  else closeSavePanel();
+}
+
+function openSavePanel(): void {
+  if (!savePanel || !saveText) return;
+  closeTuneMenu(); // one house pop-up at a time
+  // Read the live grids and tempo out as source text; the name is left blank
+  // for the player to fill in once it is pasted into presets.ts.
+  saveText.value = tuneToSource(state);
+  savePanel.removeAttribute("hidden");
+  saveBtn?.setAttribute("aria-expanded", "true");
+  saveText.focus();
+  saveText.select();
+  void copySaveText(); // hand it to the clipboard straight away
+}
+
+// A transient pop-up like the track picker: tapping away or Escape closes it.
+function closeSavePanel(): void {
+  if (!savePanel || savePanel.hasAttribute("hidden")) return;
+  savePanel.setAttribute("hidden", "");
+  saveBtn?.setAttribute("aria-expanded", "false");
+  if (saveHint) saveHint.dataset.copied = "false";
+}
+
+// Copy the source to the clipboard, falling back to the pre-selected textarea
+// when the Clipboard API is blocked (older browser, denied permission). The
+// hint flips to a confirmation either way the copy could land.
+async function copySaveText(): Promise<void> {
+  if (!saveText) return;
+  saveText.focus();
+  saveText.select();
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(saveText.value);
+    ok = true;
+  } catch {
+    ok = false;
+  }
+  if (saveHint) saveHint.dataset.copied = String(ok);
 }
 
 // ---- the music layer: hidden until a musician is picked -----------------
@@ -371,6 +431,14 @@ document.addEventListener("pointerdown", (event) => {
   ) {
     closeTuneMenu();
   }
+  // Save's panel likewise: any tap outside the panel or its own Save button.
+  if (
+    target &&
+    !target.closest("[data-save-panel]") &&
+    !target.closest("[data-save]")
+  ) {
+    closeSavePanel();
+  }
   const el = target?.closest(CONTROL);
   if (el) {
     event.preventDefault(); // stop the trailing synthetic click double-firing
@@ -389,6 +457,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && tuneMenu && !tuneMenu.hasAttribute("hidden")) {
     closeTuneMenu();
     loadBtn?.focus();
+    return;
+  }
+  if (event.key === "Escape" && savePanel && !savePanel.hasAttribute("hidden")) {
+    closeSavePanel();
+    saveBtn?.focus();
     return;
   }
   if (event.key === "Escape") closeTransportPanel();
