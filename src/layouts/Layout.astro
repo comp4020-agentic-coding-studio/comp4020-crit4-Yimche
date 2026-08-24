@@ -31,6 +31,15 @@ const card = new URL(
     <meta property="og:type" content="website" />
     <meta property="og:image" content={card} />
     <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Retro display font; monospace fallback if it fails to load, so the
+         layout never depends on the network at build or first paint. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <slot />

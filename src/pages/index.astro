@@ -1,23 +1,126 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { SECTIONS } from "../lib/instrument.ts";
+import { DEFAULT_BPM, DEFAULT_STEPS } from "../lib/sequencer.ts";
+
+// Rows render high pitch at the top, low at the bottom, so the grid reads like
+// a stave. data-row stays the model's index (0 = lowest).
+const rowsTopDown = (rows: number) =>
+  Array.from({ length: rows }, (_, i) => rows - 1 - i);
+const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
 ---
 
 <Layout
-  title="COMP4020 prototype"
-  description="Replace this with one sentence saying what this page is. A search result and a link preview both show it."
+  title="8-Bit Orchestra"
+  description="Conduct a pixel-art chiptune orchestra in your browser: place notes on each section's grid, set the tempo, and the ensemble loops live while the stage lights follow the sound."
 >
   <header>
     <nav aria-label="Primary">
-      <a href="./">Home</a>
+      <a href="./">8-Bit Orchestra</a>
     </nav>
   </header>
+
   <main>
-    <h1>COMP4020 prototype</h1>
-    <p data-testid="intro">
-      Replace this with your prototype. This week's brief is on the course
-      website; <code>spec/README.md</code> explains how the checks in this repo
-      relate to it.
-    </p>
+    <h1>8-Bit Orchestra</h1>
+
+    <!-- The side-on theatre. It doubles as the state display: dim at rest,
+         each tier lights when its section is sounding. -->
+    <div class="theatre" data-theatre>
+      <div class="house">
+        <div class="crowd" aria-hidden="true">
+          {Array.from({ length: 14 }, () => <span class="head"></span>)}
+        </div>
+      </div>
+
+      <div class="stage" aria-hidden="true">
+        {
+          SECTIONS.map((section, i) => (
+            <div
+              class="tier"
+              data-tier={section.id}
+              style={`--tier: ${i}; --hue: var(--hue-${section.id});`}
+            >
+              <span class="spot"></span>
+              <span class="player"></span>
+              <span class="label">{section.label}</span>
+            </div>
+          ))
+        }
+      </div>
+
+      <button
+        class="conductor"
+        data-conductor
+        data-play
+        type="button"
+        aria-label="Wake the orchestra"
+      >
+        <span class="spot spot-director"></span>
+        <span class="baton" data-baton></span>
+        <span class="podium"></span>
+      </button>
+
+      <p class="invite" data-invite>Tap the conductor to wake the orchestra</p>
+    </div>
+
+    <!-- The conductor's transport. -->
+    <div class="transport" role="group" aria-label="Conductor">
+      <button data-tempo="-5" data-play type="button" aria-label="Slower">−</button>
+      <span class="bpm" data-bpm aria-live="polite">{DEFAULT_BPM} BPM</span>
+      <button data-tempo="5" data-play type="button" aria-label="Faster">+</button>
+      <button data-transport data-play type="button" aria-pressed="false">Play</button>
+    </div>
+
+    <!-- Phone: one section at a time via tabs. Desktop shows every rack. -->
+    <div class="tabs" role="tablist" aria-label="Sections">
+      {
+        SECTIONS.map((section, i) => (
+          <button
+            class="tab"
+            data-tab={section.id}
+            data-play
+            type="button"
+            role="tab"
+            aria-selected={i === 0 ? "true" : "false"}
+            style={`--hue: var(--hue-${section.id});`}
+          >
+            {section.label}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="racks">
+      {
+        SECTIONS.map((section, i) => (
+          <section
+            class:list={["rack", { selected: i === 0 }]}
+            data-rack={section.id}
+            aria-label={section.label}
+            style={`--hue: var(--hue-${section.id});`}
+          >
+            <h2>{section.label}</h2>
+            <div class="grid" data-grid={section.id}>
+              {rowsTopDown(section.rows).map((row) =>
+                cols.map((col) => (
+                  <button
+                    class="cell"
+                    data-play
+                    data-section={section.id}
+                    data-row={row}
+                    data-col={col}
+                    type="button"
+                    aria-pressed="false"
+                    aria-label={`${section.label} row ${row + 1} beat ${col + 1}`}
+                  />
+                )),
+              )}
+            </div>
+          </section>
+        ))
+      }
+    </div>
   </main>
+
   <script src="../scripts/main.ts"></script>
 </Layout>
