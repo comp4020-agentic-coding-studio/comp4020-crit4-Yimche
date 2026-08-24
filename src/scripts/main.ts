@@ -162,12 +162,15 @@ function closeEditor(): void {
   if (!editor) return;
   editor.setAttribute("hidden", "");
   const section = editor.dataset.section;
-  document
-    .querySelector<HTMLElement>(`[data-group="${section}"]`)
-    ?.focus();
-  for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
-    group.classList.remove("editing");
+  const group = document.querySelector<HTMLElement>(`[data-group="${section}"]`);
+  for (const g of document.querySelectorAll<HTMLElement>("[data-group]"))
+    g.classList.remove("editing");
   editingGroup = null;
+  // Return focus to the musician only for keyboard users. A pointer tap on Done
+  // should not leave a white focus ring around the group while it plays; instead
+  // let focus fall away from the now-hidden Done button.
+  if (keyboardMode) group?.focus();
+  else (document.activeElement as HTMLElement | null)?.blur();
 }
 
 // ---- transport + lighting (derived from the model) ----------------------
@@ -238,6 +241,10 @@ function paintStep(col: number): void {
 
 // ---- input --------------------------------------------------------------
 
+// Which device drove the last activation, so closeEditor knows whether to
+// restore a visible focus ring (keyboard) or leave focus alone (pointer).
+let keyboardMode = false;
+
 // Pointer covers mouse and touch; one delegated listener for every control.
 document.addEventListener("pointerdown", (event) => {
   const target = event.target as Element | null;
@@ -253,6 +260,7 @@ document.addEventListener("pointerdown", (event) => {
   const el = target?.closest(CONTROL);
   if (el) {
     event.preventDefault(); // stop the trailing synthetic click double-firing
+    keyboardMode = false;
     void activate(el);
   }
 });
@@ -269,6 +277,7 @@ document.addEventListener("keydown", (event) => {
   if (!el) return;
   if (event.key === "Enter" || event.key === " ") {
     event.preventDefault();
+    keyboardMode = true;
     void activate(el);
     return;
   }
