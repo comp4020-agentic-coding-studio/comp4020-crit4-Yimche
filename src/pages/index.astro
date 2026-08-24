@@ -13,14 +13,15 @@ import perc from "../assets/art/perc.png";
 const art: Record<string, ImageMetadata> = { lead, harmony, bass, perc };
 
 // Where each section stands on the stage, as % of the aspect-locked stage box.
-// These mirror the risers painted by scripts/art/generate.mjs (side-on
-// cross-section: sections step up and back to the right), so each cluster of
-// musicians stands on its own tier at every size. Anchored bottom, centred left.
+// These mirror the two-tier zig-zag risers painted by
+// scripts/art/generate.mjs: lead + bass sit on the lower front step, harmony +
+// perc on the upper back step, interlocking left to right. Anchored bottom,
+// centred left.
 const spot: Record<string, { left: number; bottom: number; w: number }> = {
-  lead: { left: 46, bottom: 24, w: 16 },
-  harmony: { left: 58, bottom: 31, w: 16 },
-  bass: { left: 71, bottom: 37, w: 13 },
-  perc: { left: 85, bottom: 43, w: 12 },
+  lead: { left: 43, bottom: 22, w: 16 },
+  harmony: { left: 57, bottom: 32, w: 16 },
+  bass: { left: 72, bottom: 22, w: 13 },
+  perc: { left: 86, bottom: 32, w: 12 },
 };
 
 // Every spotlight hangs from the same lighting truss near the top of the stage,
@@ -65,12 +66,14 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
   </header>
 
   <main class="app">
-    <h1 class="show-title">8-Bit Orchestra</h1>
-
     <!-- The immersive stage. It doubles as the state display: each musician is
          dim until its part is playing, then lit in the section's colour. -->
     <div class="stage" data-theatre>
       <img class="backdrop" src={stage.src} alt="" width={stage.width} height={stage.height} />
+
+      <!-- The show title hangs inside the proscenium, so it is positioned
+           against the stage box (not the page) and holds at every viewport. -->
+      <h1 class="show-title">8-Bit Orchestra</h1>
 
       <!-- The lighting rig: one cone per performer, all hung from the same truss
            so they descend from a consistent height. Behind the performers. -->

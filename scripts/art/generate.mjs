@@ -62,17 +62,32 @@ const HUE = {
 // index.astro can be anchored to the same tiers this scene paints.
 const STAGE = { W: 384, H: 216 };
 
-// Orchestra risers, front (nearest the conductor, low + left) to back (high +
-// right). `top` is the y of the walking surface; sprites stand with their feet
-// here. Kept in the exported comment block below for index.astro to mirror.
+// Orchestra risers on TWO curved tiers, laid out left to right in a zig-zag:
+// the sections alternate between a lower front step and an upper back step, so
+// lead + bass sit low and harmony + perc sit high, interlocking. `top` is the y
+// of the walking surface; sprites stand with their feet here. Mirrored by the
+// `spot` map in index.astro.
+const LOWER_TOP = 168;
+const UPPER_TOP = 146;
 const RISERS = [
-  { id: "lead", x0: 150, x1: 200, top: 164 },
-  { id: "harmony", x0: 200, x1: 250, top: 150 },
-  { id: "bass", x0: 250, x1: 302, top: 136 },
-  { id: "perc", x0: 302, x1: 358, top: 122 },
+  { id: "lead", x0: 142, x1: 188, top: LOWER_TOP },
+  { id: "harmony", x0: 197, x1: 243, top: UPPER_TOP },
+  { id: "bass", x0: 252, x1: 298, top: LOWER_TOP },
+  { id: "perc", x0: 307, x1: 353, top: UPPER_TOP },
 ];
-const PODIUM = { x0: 120, x1: 150, top: 158 };
-const APRON_BOTTOM = 196; // stage front ends here; below is understage shadow
+const STAGE_LEFT = 138; // left edge of the round platform
+const PODIUM = { x0: 118, x1: 148, top: 158 };
+const APRON_BOTTOM = 198; // stage front ends here; below is understage shadow
+
+// The stage front is an arc, bowing toward the audience at its centre so the
+// platform reads as a rounded amphitheatre floor. Shared by the stage body and
+// the footlights so both trace the same curve.
+const apronFrontY = (x) => {
+  const mid = (STAGE_LEFT + STAGE.W) / 2;
+  const half = (STAGE.W - STAGE_LEFT) / 2;
+  const u = (x - mid) / half; // -1 .. 1
+  return Math.round(APRON_BOTTOM - (1 - u * u) * 10);
+};
 
 // ---- background: side-on cross-section of a theatre --------------------
 function background() {
@@ -145,42 +160,55 @@ function drawChandelier(c, cx, cy) {
 
 function drawAudience(c) {
   const { H } = STAGE;
-  // A big raked bank of red velvet seats seen from the side: the front row sits
-  // low and near the stage (right), and each row behind it steps UP and back to
-  // the left, so the whole house fills the frame instead of a clump in the
-  // corner. `t` runs 0 (front) .. 1 (back).
-  const xNear = 138; // front row, just left of the stage front (x0 = 150)
+  // A curved amphitheatre bowl of red velvet seats seen from the side. The rake
+  // is CONCAVE: it drops fast near the stage and flattens toward the back, so
+  // the seating sweeps up-and-around like a Greek theatron rather than a flat
+  // ramp. Each bench also bows, and the bowl is packed full of patrons.
+  const xNear = 150; // front row, right up against the round stage front
   const xFar = 2;
-  const yNear = 198; // front baseline, low
-  const yFar = 74; // back baseline, high up-left
-  const yTop = (x) =>
-    Math.round(yFar + ((x - xFar) / (xNear - xFar)) * (yNear - yFar));
+  const yNear = 204; // front baseline, low by the apron
+  const yFar = 56; // back baseline, high up-left
+  // concave bowl curve: t is 0 back .. 1 front, raised to a power so the near
+  // rows fall away steeply and the far rows stack tightly up the back wall.
+  const rake = (x) => {
+    const t = (x - xFar) / (xNear - xFar);
+    return Math.round(yFar + (yNear - yFar) * Math.pow(Math.max(0, t), 1.7));
+  };
 
-  // Carpeted rake beneath the seats.
-  for (let x = xFar; x <= xNear; x++) c.vline(x, yTop(x), H - yTop(x), C.seatDark);
+  // Carpeted bowl beneath the seats.
+  for (let x = xFar; x <= xNear; x++) c.vline(x, rake(x), H - rake(x), C.seatDark);
 
-  // Draw back rows first so nearer rows overlap them.
-  const rows = 6;
+  // Draw back rows first so nearer rows overlap them. Eight tightly-stacked rows
+  // fill the whole bowl.
+  const rows = 8;
   for (let r = rows - 1; r >= 0; r--) {
-    const t = r / (rows - 1);
-    const cx = Math.round(xNear - 12 - t * (xNear - xFar - 24));
-    const y = yTop(cx);
-    const half = Math.round(32 - t * 15); // wider in front
-    const h = Math.round(16 - t * 8); // taller in front
-    const left = cx - half;
+    const t = r / (rows - 1); // 0 front .. 1 back
+    const cx = Math.round(xNear - 10 - t * (xNear - xFar - 18));
+    const half = Math.round(34 - t * 15); // wider in front
+    const h = Math.round(15 - t * 7); // taller in front
+    const bow = Math.max(1, Math.round(5 - t * 3)); // row curvature, less at back
+    const baseY = rake(cx);
+    // Bowed velvet bench, drawn column by column so the row curves: the ends dip
+    // toward the viewer and the centre sits back and higher.
+    for (let dx = -half; dx <= half; dx++) {
+      const u = dx / half; // -1 .. 1
+      const y = baseY - Math.round(bow * (1 - u * u)); // centre highest
+      const px = cx + dx;
+      c.vline(px, y - h, h, C.seat);
+      c.set(px, y - h, C.seatHi);
+      c.set(px, y - h + 1, C.seatHi);
+      c.set(px, y, C.gold); // brass rail along the row front
+    }
+    // Patrons packed along the bowed row, following the same curve.
     const w = half * 2;
-    // velvet bench: body, lit top rail, dark base
-    c.rect(left, y - h, w, h, C.seat);
-    c.hline(left, y - h, w, C.seatHi);
-    c.hline(left, y - h + 1, w, C.seatHi);
-    c.rect(left, y - 2, w, 2, C.seatDark);
-    c.hline(left, y, w, C.gold); // brass rail along the row front
-    // seated patrons: clear head-and-shoulders silhouettes
-    const patrons = Math.max(4, Math.round(w / 11));
+    const patrons = Math.max(6, Math.round(w / 8));
     const step = w / patrons;
+    const hr = Math.max(2, Math.round(5 - t * 2)); // bigger heads in front
     for (let p = 0; p < patrons; p++) {
-      const px = Math.round(left + step * (p + 0.5));
-      const hr = Math.max(3, Math.round(5 - t * 2)); // bigger heads in front
+      const dx = -half + step * (p + 0.5);
+      const u = dx / half;
+      const px = Math.round(cx + dx);
+      const y = baseY - Math.round(bow * (1 - u * u));
       c.rect(px - hr - 1, y - h - hr - 1, hr * 2 + 3, hr + 3, C.sil); // shoulders
       c.ellipse(px, y - h - hr - 3, hr, hr, C.sil); // head
       // warm rim along the top of the head so the crowd reads against the dark
@@ -190,32 +218,50 @@ function drawAudience(c) {
   }
 }
 
-// The stage: a solid raised platform with gold-nosed tier ledges the orchestra
-// stands on, vertical support beams, a footlit apron, and dark understage.
+// A shallow arc across a ledge: the surface bows so the platform reads as a
+// rounded thrust rather than a flat plank. Returns y for a given x, dipping
+// `depth` px lower at the outer ends (concave, curving away toward the centre).
+function ledgeArc(x, a, b, top, depth) {
+  const mid = (a + b) / 2;
+  const half = (b - a) / 2 || 1;
+  const u = (x - mid) / half; // -1 .. 1
+  return top + Math.round(depth * u * u);
+}
+
+// The stage: a solid raised platform whose FRONT edge curves out toward the
+// audience like an amphitheatre's rounded orchestra floor. Gold-nosed tier
+// ledges (also gently bowed) carry each section; below is the footlit apron and
+// dark understage.
 function drawStage(c) {
   const { W, H } = STAGE;
-  const x0 = RISERS[0].x0;
-  const backTop = RISERS[RISERS.length - 1].top;
-  // solid stage body (dark warm wood), from the back tier down to the apron
-  for (let y = backTop; y < APRON_BOTTOM; y++) c.hline(x0, y, W - x0, C.woodLo);
+  const x0 = STAGE_LEFT;
+  const backTop = UPPER_TOP;
+  // solid stage body (dark warm wood), from the back tier down to the curved apron
+  for (let x = x0; x < W; x++) c.vline(x, backTop, apronFrontY(x) - backTop, C.woodLo);
   // vertical support beams for structure, not a flat plank wall
-  for (let sx = x0 + 6; sx < W; sx += 24) c.vline(sx, backTop, APRON_BOTTOM - backTop, C.woodSeam);
-  // tier ledges: a lit walking surface + gold nosing where each section stands
+  for (let sx = x0 + 6; sx < W; sx += 24) c.vline(sx, backTop, apronFrontY(sx) - backTop, C.woodSeam);
+  // tier ledges: a lit, bowed walking surface + gold nosing where each stands
   for (const { x0: a, x1: b, top } of RISERS) {
-    c.rect(a, top, b - a, 3, C.wood);
-    c.hline(a, top, b - a, C.woodHi);
-    c.hline(a, top + 3, b - a, C.gold); // nosing
-    c.hline(a, top + 4, b - a, C.goldLo);
+    for (let x = a; x <= b; x++) {
+      const y = ledgeArc(x, a, b, top, 2);
+      c.vline(x, y, 3, C.wood);
+      c.set(x, y, C.woodHi);
+      c.set(x, y + 3, C.gold); // nosing
+      c.set(x, y + 4, C.goldLo);
+    }
     // slim music stand at the back of each ledge
     const sx = Math.round((a + b) / 2) + 12;
     c.vline(sx, top - 11, 11, C.black);
     c.rect(sx - 4, top - 14, 9, 3, C.woodLo);
     c.hline(sx - 4, top - 14, 9, C.gold);
   }
-  // apron front (below the front tier) with a red skirt, then dark understage
-  c.rect(x0, RISERS[0].top + 5, W - x0, 3, C.carpet);
-  c.rect(x0, APRON_BOTTOM, W - x0, 2, C.black);
-  for (let y = APRON_BOTTOM + 2; y < H; y++) c.hline(x0, y, W - x0, C.seatDark);
+  // curved apron front edge (red skirt) tracing the same arc, then understage
+  for (let x = x0; x < W; x++) {
+    const y = apronFrontY(x);
+    c.vline(x, y - 6, 3, C.carpet); // red skirt just above the edge
+    c.set(x, y, C.black); // dark nosing along the round front
+    c.vline(x, y + 1, H - y - 1, C.seatDark); // understage shadow
+  }
 }
 
 function drawPodium(c) {
@@ -231,9 +277,10 @@ function drawPodium(c) {
 }
 
 function drawFootlights(c) {
-  // A row of warm bulbs along the front edge of the stage apron.
-  const y = APRON_BOTTOM - 6;
-  for (let x = RISERS[0].x0 + 6; x < STAGE.W - 6; x += 16) {
+  // A row of warm bulbs along the curved front edge of the stage apron, each
+  // sitting just above the arc so the footlights hug the round nosing.
+  for (let x = STAGE_LEFT + 8; x < STAGE.W - 6; x += 16) {
+    const y = apronFrontY(x) - 4;
     // soft pool of light above each bulb
     for (let ry = 1; ry <= 9; ry++)
       for (let rx = -ry; rx <= ry; rx++)
@@ -468,13 +515,14 @@ function card() {
       c.set(x, y, [bg.d[i], bg.d[i + 1], bg.d[i + 2], 255]);
     }
   }
-  // Place performers with the same fractional anchors as the page.
+  // Place performers with the same fractional anchors as the page (zig-zag:
+  // lead + bass low, harmony + perc high).
   const f = 4;
   placeFoot(c, scaleUp(conductorSprite(), f), 0.36, 0.26);
-  placeFoot(c, scaleUp(sectionSprite("trumpet", HUE.lead, 3), f), 0.46, 0.24);
-  placeFoot(c, scaleUp(sectionSprite("violin", HUE.harmony, 3), f), 0.58, 0.31);
-  placeFoot(c, scaleUp(sectionSprite("bass", HUE.bass, 2), f), 0.71, 0.37);
-  placeFoot(c, scaleUp(sectionSprite("drum", HUE.perc, 2), f), 0.85, 0.43);
+  placeFoot(c, scaleUp(sectionSprite("trumpet", HUE.lead, 3), f), 0.43, 0.22);
+  placeFoot(c, scaleUp(sectionSprite("violin", HUE.harmony, 3), f), 0.57, 0.32);
+  placeFoot(c, scaleUp(sectionSprite("bass", HUE.bass, 2), f), 0.72, 0.22);
+  placeFoot(c, scaleUp(sectionSprite("drum", HUE.perc, 2), f), 0.86, 0.32);
   // Title band.
   c.rect(0, H - 150, W, 150, [10, 10, 24, 175]);
   text(c, "8-BIT ORCHESTRA", 60, H - 120, 10, hx("#ffd23f"));
@@ -533,10 +581,10 @@ save("public/card.png", card());
 if (process.argv.includes("--sheet")) {
   const c = background();
   placeFoot(c, conductorSprite(), 0.36, 0.26);
-  placeFoot(c, sectionSprite("trumpet", HUE.lead, 3), 0.46, 0.24);
-  placeFoot(c, sectionSprite("violin", HUE.harmony, 3), 0.58, 0.31);
-  placeFoot(c, sectionSprite("bass", HUE.bass, 2), 0.71, 0.37);
-  placeFoot(c, sectionSprite("drum", HUE.perc, 2), 0.85, 0.43);
+  placeFoot(c, sectionSprite("trumpet", HUE.lead, 3), 0.43, 0.22);
+  placeFoot(c, sectionSprite("violin", HUE.harmony, 3), 0.57, 0.32);
+  placeFoot(c, sectionSprite("bass", HUE.bass, 2), 0.72, 0.22);
+  placeFoot(c, sectionSprite("drum", HUE.perc, 2), 0.86, 0.32);
   writeFileSync("/tmp/contact.png", scaleUp(c, 3).encodePNG());
   console.log("wrote /tmp/contact.png");
 }
