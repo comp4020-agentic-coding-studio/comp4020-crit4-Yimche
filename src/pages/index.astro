@@ -45,7 +45,7 @@ const bottomOn = (top: number, leftPct: number) =>
   Math.round(((STAGE_H - (deckY(top, leftPct) + FOOT_SINK)) / STAGE_H) * 1000) / 10;
 
 const LOWER_TOP = 182; // front deck: conductor, lead, bass
-const UPPER_TOP = 162; // back deck: harmony, perc
+const UPPER_TOP = 159; // back deck: harmony, perc (raised for a taller top layer)
 // Harmony and perc sit a touch high off the back deck; drop them 2 stage-pixels
 // so their feet meet the plank like the front row does.
 const UPPER_FOOT = UPPER_TOP + 2;

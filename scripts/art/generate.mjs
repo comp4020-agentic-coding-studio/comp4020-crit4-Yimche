@@ -75,7 +75,7 @@ const STAGE = { W: 384, H: 216 };
 // `top` is the y of the walking surface; sprites stand with their feet here.
 // Mirrored by the `spot` map in index.astro.
 const LOWER_TOP = 182;
-const UPPER_TOP = 162;
+const UPPER_TOP = 159; // back deck rides a touch higher, a taller top layer
 // How far each deck arches up at its centre. The decks bow the OPPOSITE way to
 // the main stage floor: the apron dips DOWN in the middle, so the decks ride UP
 // in the middle. Mirrored by index.astro so the sprites sit on the same curve.
@@ -141,19 +141,14 @@ function background() {
   // ends. Drawn before the stage for the same reason the curtain is.
   drawAmbientBeams(c);
 
-  // Auditorium: the dark carpeted bank first, so the left curtain can cover its
-  // bare red where it meets the stage.
+  // Auditorium: the whole crowd, carpet bank then seated rows.
   drawAudienceGround(c);
+  drawAudienceRows(c);
 
-  // The left frame and drape hang over that carpet but behind the seated crowd:
-  // drawn AFTER the bank and BEFORE the rows, so the drape covers the red field
-  // yet the patrons still read in front of it. Before the deck so the stage
-  // still hides the curtain's feet.
+  // The left frame and drape hang over the crowd, covering the patrons nearest
+  // the stage, but BEFORE the deck so the stage still hides the curtain's feet.
   drawLeftPillar(c);
   drawLeftLeg(c);
-
-  // The seated patrons, in front of the drape.
-  drawAudienceRows(c);
 
   // Stage: a raised, tiered platform the orchestra stands on.
   drawStage(c);
@@ -179,12 +174,12 @@ function foreground() {
   const { W, H } = STAGE;
   const c = new Canvas(W, H);
   // Same crowd layering as the background so this top layer stays consistent:
-  // carpet bank, then the left curtain over it, then the patrons in front of the
-  // curtain. Without the curtain here the redrawn carpet would cover it.
+  // the whole crowd, then the left curtain over it. Without the curtain here the
+  // redrawn crowd would cover it.
   drawAudienceGround(c);
+  drawAudienceRows(c);
   drawLeftPillar(c);
   drawLeftLeg(c);
-  drawAudienceRows(c);
   drawStage(c);
   drawPodium(c);
   drawFootlights(c);
@@ -220,9 +215,9 @@ function drawChandelier(c, cx, cy) {
   for (let k = -2; k <= 2; k++) c.set(cx + k * 3, cy - 4, C.bulb);
 }
 
-// The house crowd, in two layers so the left curtain can hang between them: the
-// dark carpeted BANK (drawn behind the curtain) and the RAKED ROWS of patrons
-// (drawn in front of it). A raked bank of red velvet seats fills the whole left
+// The house crowd, kept in two functions (carpeted BANK and RAKED ROWS of
+// patrons) so the draw order stays explicit; the left curtain now hangs over
+// both. A raked bank of red velvet seats fills the whole left
 // of the house; the rows bleed off the left edge and the border hard-cuts them,
 // so the crowd runs right off screen. Each bench curves so its LEFT end sits
 // lower and its RIGHT end (toward the stage) rides higher; the right end also
@@ -237,8 +232,7 @@ const AUD = {
 };
 
 // The dark carpeted bank beneath the seats, bled off the left edge too, so no
-// bare floor shows between the rows or in the corners. This is the red field the
-// left curtain frame and drape hang in front of.
+// bare floor shows between the rows or in the corners.
 function drawAudienceGround(c) {
   const { H } = STAGE;
   const { xStart, xFront, yFront, yBack } = AUD;
@@ -250,8 +244,7 @@ function drawAudienceGround(c) {
   }
 }
 
-// The seated patrons, drawn in FRONT of the left curtain so the crowd still
-// reads over the drape while the drape covers the bare carpet behind them.
+// The seated patrons on their raked benches.
 function drawAudienceRows(c) {
   const { xStart, xFront, yFront, yBack, rows } = AUD;
   // Draw back rows first so nearer rows overlap them.
