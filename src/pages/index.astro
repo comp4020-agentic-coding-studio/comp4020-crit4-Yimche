@@ -21,12 +21,46 @@ const art: Record<string, ImageMetadata> = { lead, harmony, bass, perc };
 // Anchored bottom, centred left. Widths are small: each section is about the size
 // of a front-row audience member, so the players read as people on the stage
 // rather than looming over the house.
-const spot: Record<string, { left: number; bottom: number; w: number }> = {
-  lead: { left: 50, bottom: 21, w: 11 },
-  harmony: { left: 60, bottom: 31, w: 11 },
-  bass: { left: 73, bottom: 21, w: 9 },
-  perc: { left: 84, bottom: 31, w: 8 },
+
+// The two decks arc UP at their centre (the apron floor dips DOWN at centre), so
+// a performer's feet must follow the deck's curve at their own x, not a flat
+// line. This mirrors ledgeArc() in scripts/art/generate.mjs: one stage-wide arc
+// per deck, sampled at the performer's x.
+const STAGE_W = 384;
+const STAGE_H = 216;
+const TIER_DEPTH = 8;
+const ARC_MID = (126 + STAGE_W) / 2; // centre of the stage-wide tier span
+const ARC_HALF = (STAGE_W - 126) / 2;
+const deckY = (top: number, leftPct: number) => {
+  const x = (leftPct / 100) * STAGE_W;
+  const u = (x - ARC_MID) / ARC_HALF; // -1 .. 1 across the deck
+  return top - Math.round(TIER_DEPTH * (1 - u * u)); // centre highest
 };
+// The scaled sprites carry a couple of transparent pixels under their feet, and
+// that gap grows with the display scale, so sink each a little below the deck
+// line to land the visible feet on the plank. Tuned against the rendered page.
+const FOOT_SINK = 4; // stage-pixels
+const bottomOn = (top: number, leftPct: number) =>
+  Math.round(((STAGE_H - (deckY(top, leftPct) + FOOT_SINK)) / STAGE_H) * 1000) / 10;
+
+const LOWER_TOP = 170; // front deck: conductor, lead, bass
+const UPPER_TOP = 150; // back deck: harmony, perc
+const spot: Record<string, { left: number; bottom: number; w: number }> = {
+  lead: { left: 50, bottom: bottomOn(LOWER_TOP, 50), w: 11 },
+  harmony: { left: 60, bottom: bottomOn(UPPER_TOP, 60), w: 11 },
+  bass: { left: 73, bottom: bottomOn(LOWER_TOP, 73), w: 9 },
+  perc: { left: 84, bottom: bottomOn(UPPER_TOP, 84), w: 8 },
+};
+
+// The conductor stands on the low podium at stage front-left, its own short arc.
+const conductorBottom =
+  Math.round(
+    ((STAGE_H -
+      ((158 - Math.round(2 * (1 - Math.pow(((37 / 100) * STAGE_W - 147) / 19, 2)))) +
+        FOOT_SINK)) /
+      STAGE_H) *
+      1000,
+  ) / 10;
 
 // Every spotlight hangs from the same lighting truss near the top of the stage,
 // so the cones all descend from one consistent height; only their length varies
@@ -50,8 +84,8 @@ const beams = [
   {
     id: "director",
     left: 37,
-    height: beamHeight(27),
-    width: beamWidth(beamHeight(27)),
+    height: beamHeight(conductorBottom),
+    width: beamWidth(beamHeight(conductorBottom)),
     hue: "#fff3cf",
   },
 ];
@@ -118,7 +152,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         aria-label="Wake the orchestra and set the tempo"
         aria-haspopup="true"
         aria-expanded="false"
-        style="left:37%;bottom:27%;width:4%"
+        style={`left:37%;bottom:${conductorBottom}%;width:4%`}
       >
         <img class="sprite" src={conductor.src} alt="" />
       </button>

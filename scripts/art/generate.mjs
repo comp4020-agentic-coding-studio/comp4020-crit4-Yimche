@@ -76,6 +76,10 @@ const STAGE = { W: 384, H: 216 };
 // Mirrored by the `spot` map in index.astro.
 const LOWER_TOP = 170;
 const UPPER_TOP = 150;
+// How far each deck arches up at its centre. The decks bow the OPPOSITE way to
+// the main stage floor: the apron dips DOWN in the middle, so the decks ride UP
+// in the middle. Mirrored by index.astro so the sprites sit on the same curve.
+const TIER_DEPTH = 8;
 const RISERS = [
   { id: "lead", x0: 176, x1: 208, top: LOWER_TOP },
   { id: "harmony", x0: 214, x1: 246, top: UPPER_TOP },
@@ -127,10 +131,14 @@ function background() {
   // Drawn before the curtain and stage so both hang and sit in front of it.
   drawStageBackWall(c);
 
-  // The stage-left curtain is drawn FIRST, so the stage and its apron paint
-  // over its lower half: the drape reads as wrapping around behind the stage
-  // rather than hanging flat in front of it.
-  drawLeftCurtain(c);
+  // The curtain legs are drawn FIRST, so the stage and its apron paint over
+  // their lower ends: the drapes read as hanging behind the stage, ending behind
+  // the top section rather than in front of it.
+  drawCurtainLegs(c);
+
+  // The overhead beams hang from behind, so the top deck occludes their lower
+  // ends. Drawn before the stage for the same reason the curtain legs are.
+  drawAmbientBeams(c);
 
   // Auditorium: raked rows of red velvet seats on the left.
   drawAudience(c);
@@ -174,22 +182,23 @@ function drawChandelier(c, cx, cy) {
 
 function drawAudience(c) {
   const { H } = STAGE;
-  // A raked bank of red velvet seats filling the WHOLE left of the house. Every
-  // row runs hard to the left wall, so the crowd covers the entire left side,
-  // top to bottom, including the lower-left corner. The right end of each row
-  // recedes leftward with depth, giving the raked, side-on look; the baselines
-  // climb from the apron up to under the valance.
-  const xLeft = 0; // hard against the left wall
+  // A raked bank of red velvet seats filling the whole left of the house. The
+  // rows bleed off the left edge and the border hard-cuts them, so the crowd
+  // runs right off screen. Each bench curves so its LEFT end sits lower and its
+  // RIGHT end (toward the stage) rides higher; the right end also recedes
+  // leftward with depth and the baselines climb from the apron up under the
+  // valance.
+  const xStart = -26; // bleed off the left edge; the border clips it
   const xFront = 150; // front row meets the round stage front
-  const yFront = 212; // front baseline, low by the apron
-  const yBack = 44; // back baseline, high up-left under the valance
+  const yFront = 214; // front baseline, low by the apron
+  const yBack = 40; // back baseline, high up-left under the valance
   const rows = 12;
 
-  // Carpeted bank beneath the seats: fill the whole left region down to the
-  // floor so no bare aisle shows between the rows or in the corners.
-  for (let x = xLeft; x <= xFront; x++) {
-    const tx = (x - xLeft) / (xFront - xLeft);
-    const topY = Math.round(yBack + (yFront - yBack) * Math.pow(tx, 1.4)) - 34;
+  // Carpeted bank beneath the seats, bled off the left edge too, so no bare
+  // floor shows between the rows or in the corners.
+  for (let x = xStart; x <= xFront; x++) {
+    const tx = Math.max(0, (x - xStart) / (xFront - xStart));
+    const topY = Math.round(yBack + (yFront - yBack) * Math.pow(tx, 1.4)) - 42;
     const y = Math.max(0, topY);
     c.vline(x, y, H - y, C.seatDark);
   }
@@ -198,31 +207,29 @@ function drawAudience(c) {
   for (let r = rows - 1; r >= 0; r--) {
     const t = r / (rows - 1); // 0 front .. 1 back
     const baseY = Math.round(yFront - t * (yFront - yBack));
-    const rightEnd = Math.round(xFront - t * (xFront - 26)); // recedes left with depth
-    const leftEnd = Math.round(t * 4); // a slight indent at the very back
+    const rightEnd = Math.round(xFront - t * (xFront - 30)); // recedes left with depth
+    const leftEnd = Math.round(xStart + t * 12); // bled off the left edge
     const h = Math.round(14 - t * 7); // taller in front
-    const bow = Math.max(1, Math.round(5 - t * 3)); // row curvature, less at back
-    const mid = (leftEnd + rightEnd) / 2;
-    const half = Math.max(1, (rightEnd - leftEnd) / 2);
-    // Bowed velvet bench, drawn column by column so the row curves: the ends dip
-    // toward the viewer and the centre sits back and higher.
+    const rise = Math.max(2, Math.round(11 - t * 4)); // left low, right high
+    const width = Math.max(1, rightEnd - leftEnd);
+    // Sloped velvet bench, drawn column by column: the left end sits low and the
+    // surface curves up toward the stage-side (right) end.
     for (let x = leftEnd; x <= rightEnd; x++) {
-      const u = (x - mid) / half; // -1 .. 1
-      const y = baseY - Math.round(bow * (1 - u * u)); // centre highest
+      const s = (x - leftEnd) / width; // 0 left .. 1 right
+      const y = baseY - Math.round(rise * Math.pow(s, 1.3)); // right end highest
       c.vline(x, y - h, h, C.seat);
       c.set(x, y - h, C.seatHi);
       c.set(x, y - h + 1, C.seatHi);
       c.set(x, y, C.gold); // brass rail along the row front
     }
-    // Patrons packed along the bowed row, following the same curve.
+    // Patrons packed along the sloped row, following the same curve.
     const hr = Math.max(2, Math.round(5 - t * 2)); // bigger heads in front
-    const width = rightEnd - leftEnd;
     const patrons = Math.max(3, Math.round(width / (hr * 2 + 3)));
     const step = width / patrons;
     for (let p = 0; p < patrons; p++) {
       const px = Math.round(leftEnd + step * (p + 0.5));
-      const u = (px - mid) / half;
-      const y = baseY - Math.round(bow * (1 - u * u));
+      const s = (px - leftEnd) / width;
+      const y = baseY - Math.round(rise * Math.pow(s, 1.3));
       c.rect(px - hr - 1, y - h - hr - 1, hr * 2 + 3, hr + 3, C.sil); // shoulders
       c.ellipse(px, y - h - hr - 3, hr, hr, C.sil); // head
       // warm rim along the top of the head so the crowd reads against the dark
@@ -232,14 +239,14 @@ function drawAudience(c) {
   }
 }
 
-// A shallow arc across a ledge, matching the stage's curve: the surface dips
-// `depth` px lower at its CENTRE and rides up at the ends, so the tiers echo the
-// rounded front rather than sitting flat.
+// A shallow arc across a deck, bowing the OPPOSITE way to the apron floor: the
+// surface rides UP `depth` px at its CENTRE and drops to `top` at the ends, so
+// the tiers arch against the rounded front rather than echoing it.
 function ledgeArc(x, a, b, top, depth) {
   const mid = (a + b) / 2;
   const half = (b - a) / 2 || 1;
   const u = (x - mid) / half; // -1 .. 1
-  return top + Math.round(depth * (1 - u * u));
+  return top - Math.round(depth * (1 - u * u));
 }
 
 // The stage's rear wall: fills the proscenium opening from the arch down to the
@@ -260,7 +267,7 @@ function drawStageBackWall(c) {
 // nosing, so each deck reads as a single layer rather than scattered ledges.
 function drawTier(c, a, b, top) {
   for (let x = a; x < b; x++) {
-    const y = ledgeArc(x, a, b, top, 3);
+    const y = ledgeArc(x, a, b, top, TIER_DEPTH);
     c.vline(x, y, 4, C.wood);
     c.set(x, y, C.woodHi);
     c.set(x, y + 1, C.woodHi);
@@ -277,10 +284,12 @@ function drawTier(c, a, b, top) {
 function drawStage(c) {
   const { W, H } = STAGE;
   const x0 = STAGE_LEFT;
-  // solid stage body (dark warm wood), from the back deck down to the curved apron
-  for (let x = x0; x < W; x++) c.vline(x, UPPER_TOP, apronFrontY(x) - UPPER_TOP, C.woodLo);
+  // solid stage body (dark warm wood), from the crown of the arched back deck
+  // down to the curved apron (so the arch never opens a gap above the wood)
+  const bodyTop = UPPER_TOP - TIER_DEPTH;
+  for (let x = x0; x < W; x++) c.vline(x, bodyTop, apronFrontY(x) - bodyTop, C.woodLo);
   // vertical support beams for structure, not a flat plank wall
-  for (let sx = x0 + 6; sx < W; sx += 24) c.vline(sx, UPPER_TOP, apronFrontY(sx) - UPPER_TOP, C.woodSeam);
+  for (let sx = x0 + 6; sx < W; sx += 24) c.vline(sx, bodyTop, apronFrontY(sx) - bodyTop, C.woodSeam);
   // the two full-width decks, back first then front over it
   drawTier(c, x0, W, UPPER_TOP);
   drawTier(c, x0, W, LOWER_TOP);
@@ -338,9 +347,9 @@ function drawFootlights(c) {
 const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 6, archY: 30 };
 
 // The main curtain is flown out (raised): its legs hang from the arch down to
-// just behind the upper deck, so the drape frames the stage from above the top
-// section rather than dropping to the floor.
-const CURTAIN_HEM = UPPER_TOP - 8;
+// just behind the upper deck and are drawn in the back pass, so the drape frames
+// the stage from behind the top section rather than dropping to the floor.
+const CURTAIN_HEM = UPPER_TOP - 10;
 
 function drawGiltPillar(c, px, dir) {
   const { H } = STAGE;
@@ -350,17 +359,19 @@ function drawGiltPillar(c, px, dir) {
   c.vline(dir > 0 ? x + 5 : x, PROS.archY, H - PROS.archY, C.goldLo);
 }
 
-// The stage-left pillar and its red drape, drawn before the stage so the apron
-// and podium paint over the lower half: the drape wraps behind the stage. It is
-// wide enough to overlap the podium, which is what makes the tuck read.
-function drawLeftCurtain(c) {
+// Both curtain legs and the left pillar, drawn before the stage so the stage
+// body paints over their lower ends: the drapes tuck behind the stage and end
+// behind the top section. The right leg mirrors the left, hung at the rightmost
+// edge just inside the far pillar.
+function drawCurtainLegs(c) {
   drawGiltPillar(c, PROS.leftX, 1);
   drawLeg(c, PROS.leftX + 6, PROS.archY + 4, CURTAIN_HEM, 20);
+  drawLeg(c, PROS.rightX - 6 - 20, PROS.archY + 4, CURTAIN_HEM, 20);
 }
 
 function drawProscenium(c) {
   const { leftX, rightX, archY } = PROS;
-  // Stage-right pillar (the left one is already behind the stage).
+  // Stage-right pillar (both drapes are already behind the stage).
   drawGiltPillar(c, rightX, -1);
   // arch band with a gentle sag, springing between both pillars
   for (let x = leftX; x <= rightX; x++) {
@@ -369,11 +380,15 @@ function drawProscenium(c) {
     c.hline(x, archY + sag, 1, C.gold);
     c.set(x, archY + sag + 1, C.goldLo);
   }
-  // red stage-right leg (drape), flown out to the same raised hem
-  drawLeg(c, rightX - 5 - 12, archY + 4, CURTAIN_HEM, 12);
-  // Soft ambient beams, both hung from the same height just below the arch and
-  // dropping straight down, so the resting stage already reads as lit from one
-  // consistent truss (matching the interactive cones the page overlays).
+}
+
+// Soft ambient beams, both hung from the same height just below the arch and
+// dropping straight down, so the resting stage already reads as lit from one
+// consistent truss (matching the interactive cones the page overlays). Drawn
+// BEFORE the stage so the top deck paints over their lower ends: the light
+// descends from behind the top section, not across the front of it.
+function drawAmbientBeams(c) {
+  const { archY } = PROS;
   beam(c, 210, archY + 6, 210, 152);
   beam(c, 300, archY + 6, 300, 138);
 }
@@ -565,10 +580,10 @@ function card() {
   // lead + bass low, harmony + perc high), at the small crowd-matched scale.
   const f = 2;
   placeFoot(c, scaleUp(conductorSprite(), f), 0.37, 0.27);
-  placeFoot(c, scaleUp(sectionSprite("trumpet", HUE.lead, 3), f), 0.5, 0.21);
-  placeFoot(c, scaleUp(sectionSprite("violin", HUE.harmony, 3), f), 0.6, 0.31);
-  placeFoot(c, scaleUp(sectionSprite("bass", HUE.bass, 2), f), 0.73, 0.21);
-  placeFoot(c, scaleUp(sectionSprite("drum", HUE.perc, 2), f), 0.84, 0.31);
+  placeFoot(c, scaleUp(sectionSprite("trumpet", HUE.lead, 3), f), 0.5, 0.23);
+  placeFoot(c, scaleUp(sectionSprite("violin", HUE.harmony, 3), f), 0.6, 0.33);
+  placeFoot(c, scaleUp(sectionSprite("bass", HUE.bass, 2), f), 0.73, 0.24);
+  placeFoot(c, scaleUp(sectionSprite("drum", HUE.perc, 2), f), 0.84, 0.32);
   // Title band.
   c.rect(0, H - 150, W, 150, [10, 10, 24, 175]);
   text(c, "8-BIT ORCHESTRA", 60, H - 120, 10, hx("#ffd23f"));
@@ -627,10 +642,10 @@ save("public/card.png", card());
 if (process.argv.includes("--sheet")) {
   const c = background();
   placeFoot(c, conductorSprite(), 0.37, 0.27);
-  placeFoot(c, sectionSprite("trumpet", HUE.lead, 3), 0.5, 0.21);
-  placeFoot(c, sectionSprite("violin", HUE.harmony, 3), 0.6, 0.31);
-  placeFoot(c, sectionSprite("bass", HUE.bass, 2), 0.73, 0.21);
-  placeFoot(c, sectionSprite("drum", HUE.perc, 2), 0.84, 0.31);
+  placeFoot(c, sectionSprite("trumpet", HUE.lead, 3), 0.5, 0.23);
+  placeFoot(c, sectionSprite("violin", HUE.harmony, 3), 0.6, 0.33);
+  placeFoot(c, sectionSprite("bass", HUE.bass, 2), 0.73, 0.24);
+  placeFoot(c, sectionSprite("drum", HUE.perc, 2), 0.84, 0.32);
   writeFileSync("/tmp/contact.png", scaleUp(c, 3).encodePNG());
   console.log("wrote /tmp/contact.png");
 }
