@@ -13,18 +13,19 @@ import perc from "../assets/art/perc.png";
 const art: Record<string, ImageMetadata> = { lead, harmony, bass, perc };
 
 // Where each section stands on the stage, as % of the aspect-locked stage box.
-// These mirror the two-tier zig-zag risers painted by
-// scripts/art/generate.mjs: lead + bass sit on the lower front step, harmony +
-// perc on the upper back step, interlocking left to right. Anchored bottom,
-// centred left.
-// Widths are small: each section is about the size of a front-row audience
-// member, so the players read as people on the stage rather than looming over
-// the house.
+// These mirror the two decks painted by scripts/art/generate.mjs: the conductor,
+// lead and bass stand on the lower front deck; harmony and perc on the upper back
+// deck, set further right so they read over the gap between the front players:
+//               [harmony]     [perc]
+//   [conductor] [lead]     [bass]
+// Anchored bottom, centred left. Widths are small: each section is about the size
+// of a front-row audience member, so the players read as people on the stage
+// rather than looming over the house.
 const spot: Record<string, { left: number; bottom: number; w: number }> = {
-  lead: { left: 43, bottom: 21, w: 11 },
-  harmony: { left: 57, bottom: 31, w: 11 },
-  bass: { left: 72, bottom: 21, w: 9 },
-  perc: { left: 86, bottom: 31, w: 8 },
+  lead: { left: 50, bottom: 21, w: 11 },
+  harmony: { left: 60, bottom: 31, w: 11 },
+  bass: { left: 73, bottom: 21, w: 9 },
+  perc: { left: 84, bottom: 31, w: 8 },
 };
 
 // Every spotlight hangs from the same lighting truss near the top of the stage,
@@ -48,7 +49,7 @@ const beams = [
   })),
   {
     id: "director",
-    left: 38,
+    left: 37,
     height: beamHeight(27),
     width: beamWidth(beamHeight(27)),
     hue: "#fff3cf",
@@ -117,7 +118,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         aria-label="Wake the orchestra and set the tempo"
         aria-haspopup="true"
         aria-expanded="false"
-        style="left:38%;bottom:27%;width:4%"
+        style="left:37%;bottom:27%;width:4%"
       >
         <img class="sprite" src={conductor.src} alt="" />
       </button>
