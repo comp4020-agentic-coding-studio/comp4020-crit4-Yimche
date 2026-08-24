@@ -133,11 +133,8 @@ function background() {
   // Drawn before the curtain and stage so both hang and sit in front of it.
   drawStageBackWall(c);
 
-  // The left gilt frame hangs behind the stage: drawn before the deck so the
-  // stage body paints over its lower end. The right drape starts here too, its
-  // foot tucked behind the stage; the front-of-house layer redraws its upper
-  // length over the deck.
-  drawLeftPillar(c);
+  // The right drape starts here, its foot tucked behind the stage; the
+  // front-of-house layer redraws its upper length over the deck.
   drawRightLeg(c);
 
   // The overhead beams hang from behind, so the top deck occludes their lower
@@ -147,9 +144,10 @@ function background() {
   // Auditorium: raked rows of red velvet seats on the left.
   drawAudience(c);
 
-  // The left drape lifts in front of the crowd but still behind the stage: drawn
-  // after the audience so it covers the crowd's stage-side edge, and before the
-  // deck so the stage still hides its foot.
+  // The left frame and drape lift in front of the crowd but still behind the
+  // stage: drawn AFTER the audience so no red seating spills in front of them,
+  // and BEFORE the deck so the stage still hides their feet.
+  drawLeftPillar(c);
   drawLeftLeg(c);
 
   // Stage: a raised, tiered platform the orchestra stands on.
