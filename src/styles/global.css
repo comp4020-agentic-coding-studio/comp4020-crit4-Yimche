@@ -329,6 +329,7 @@ header nav {
   color: var(--text);
   background: var(--panel-2);
   border: var(--pixel) solid var(--line);
+  border-radius: 0; /* square corners, no browser-default rounding on the frame */
   box-shadow: 2px 2px 0 var(--line);
   padding: 0.4rem 0.5rem;
   min-height: 34px;
