@@ -215,6 +215,9 @@ header nav {
 .group.editing {
   outline: var(--pixel) dashed var(--hue);
   outline-offset: 4px;
+  /* Lift the selected musician above its neighbours so the dashed box reads in
+     front of them, never clipped behind the player standing to its side. */
+  z-index: 3;
 }
 
 /* Locked until the show starts: no pointer cursor, so a musician tapped before
