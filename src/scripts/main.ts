@@ -47,6 +47,7 @@ async function activate(el: Element): Promise<void> {
     const col = Number(el.dataset.col);
     state = toggle(state, section, row, col);
     setPressed(el, isActive(state, section, row, col));
+    setLoadedTune(null); // the grid no longer matches any premade track
     refreshLights();
     return;
   }
@@ -88,6 +89,7 @@ async function activate(el: Element): Promise<void> {
       state = applyTune(state, tune);
       if (bpmLabel) bpmLabel.textContent = `${state.bpm} BPM`;
       syncCells();
+      setLoadedTune(Number(el.dataset.tune)); // mark this track as the one on stage
       refreshLights();
     }
     closeTuneMenu();
@@ -99,12 +101,14 @@ async function activate(el: Element): Promise<void> {
     // blank grid rather than a full reset of the conductor's tempo too.
     state = { ...createState(state.steps), bpm: state.bpm };
     syncCells();
+    setLoadedTune(null); // a blank grid is no track
     refreshLights();
     return;
   }
   if (el instanceof HTMLElement && el.dataset.tempo) {
     state = setTempo(state, state.bpm + Number(el.dataset.tempo));
     if (bpmLabel) bpmLabel.textContent = `${state.bpm} BPM`;
+    setLoadedTune(null); // a retuned track is no longer the premade one
   }
 }
 
@@ -159,6 +163,21 @@ function closeTransportPanel(): void {
 
 // ---- the track picker: Load's pop-up list of premade tunes ---------------
 
+// The premade track currently on stage, or null when the grid is hand-edited,
+// cleared, retuned, or freshly loaded. The menu highlights this one so the last
+// load is easy to spot on the next open; any change drops back to none.
+let loadedTune: number | null = null;
+
+function setLoadedTune(index: number | null): void {
+  loadedTune = index;
+  for (const pick of document.querySelectorAll<HTMLElement>("[data-tune]")) {
+    const on = Number(pick.dataset.tune) === index;
+    pick.classList.toggle("is-loaded", on);
+    if (on) pick.setAttribute("aria-current", "true");
+    else pick.removeAttribute("aria-current");
+  }
+}
+
 function toggleTuneMenu(): void {
   if (!tuneMenu) return;
   if (tuneMenu.hasAttribute("hidden")) openTuneMenu();
@@ -169,7 +188,12 @@ function openTuneMenu(): void {
   if (!tuneMenu) return;
   tuneMenu.removeAttribute("hidden");
   loadBtn?.setAttribute("aria-expanded", "true");
-  tuneMenu.querySelector<HTMLElement>("[data-tune]")?.focus();
+  // Open focus lands on the last-loaded track when there is one, else the first.
+  const start =
+    (loadedTune !== null &&
+      tuneMenu.querySelector<HTMLElement>(`[data-tune="${loadedTune}"]`)) ||
+    tuneMenu.querySelector<HTMLElement>("[data-tune]");
+  start?.focus();
 }
 
 // A transient pop-up, not a permanent panel: picking a track, tapping away, or

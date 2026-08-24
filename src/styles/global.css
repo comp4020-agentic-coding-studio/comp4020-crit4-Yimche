@@ -207,6 +207,14 @@ header nav {
   color: var(--ink);
 }
 
+/* The last-loaded track: a lit border and a lead-colour left edge so it stands
+   out when the menu is reopened, without borrowing the hover fill. Cleared to
+   none the moment the grid is hand-edited, cleared, or retuned. */
+.tune-pick.is-loaded {
+  border-color: var(--hue-lead);
+  box-shadow: inset 3px 0 0 var(--hue-lead);
+}
+
 /* Musicians and conductor: absolutely placed, anchored by their inline
    left/bottom/width so they stand on the painted floor. */
 .group,
