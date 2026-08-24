@@ -4,6 +4,7 @@ import {
   MIN_BPM,
   activeSections,
   cellsAt,
+  clearSection,
   createState,
   isActive,
   setTempo,
@@ -28,6 +29,18 @@ describe("sequencer: placing notes", () => {
     expect(isActive(empty, "lead", 0, 0)).toBe(false); // input untouched
     const off = toggle(on, "lead", 0, 0);
     expect(isActive(off, "lead", 0, 0)).toBe(false);
+  });
+
+  it("clearSection wipes only its own section, keeping the rest and the tempo", () => {
+    let state = setTempo(createState(), 150);
+    state = toggle(state, "lead", 0, 0);
+    state = toggle(state, "bass", 1, 2);
+    const cleared = clearSection(state, "lead");
+    expect(isActive(cleared, "lead", 0, 0)).toBe(false); // its own notes gone
+    expect(isActive(cleared, "bass", 1, 2)).toBe(true); // other section kept
+    expect(cleared.bpm).toBe(150); // tempo untouched
+    expect(isActive(state, "lead", 0, 0)).toBe(true); // input not mutated
+    expect(clearSection(state, "nope")).toBe(state); // unknown id is a no-op
   });
 
   it("ignores out-of-range coordinates rather than throwing", () => {

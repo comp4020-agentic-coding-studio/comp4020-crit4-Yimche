@@ -51,6 +51,19 @@ export function toggle(
   return { ...state, grids };
 }
 
+/** Immutably wipe one section's grid back to silence, leaving every other
+ *  section and the tempo untouched. An unknown section id returns the state
+ *  unchanged. This is the per-musician Clear, the single-section counterpart to
+ *  clearing the whole stage. */
+export function clearSection(state: SequencerState, sectionId: string): SequencerState {
+  const grid = state.grids[sectionId];
+  if (!grid) return state;
+  return {
+    ...state,
+    grids: { ...state.grids, [sectionId]: emptyGrid(grid.length, state.steps) },
+  };
+}
+
 export function isActive(
   state: SequencerState,
   sectionId: string,

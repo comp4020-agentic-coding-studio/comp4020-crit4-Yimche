@@ -227,9 +227,11 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         aria-label="Conductor's transport"
         hidden
       >
-        <button data-tempo="-5" data-play type="button" aria-label="Slower">−</button>
+        <button data-tempo="-5" data-play type="button" aria-label="Slower by 5">−5</button>
+        <button data-tempo="-1" data-play type="button" aria-label="Slower by 1">−1</button>
         <span class="bpm" data-bpm aria-live="polite">{DEFAULT_BPM} BPM</span>
-        <button data-tempo="5" data-play type="button" aria-label="Faster">+</button>
+        <button data-tempo="1" data-play type="button" aria-label="Faster by 1">+1</button>
+        <button data-tempo="5" data-play type="button" aria-label="Faster by 5">+5</button>
         <button data-transport data-play type="button" aria-pressed="false">Play</button>
       </div>
 
@@ -271,7 +273,12 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
     <div class="sheet">
       <div class="sheet-head">
         <h2 data-editor-title>Part</h2>
-        <button class="done" data-done data-play type="button">Done</button>
+        <div class="sheet-actions">
+          <!-- Clears just this musician's part, the single-section counterpart
+               to the house Clear. Leaves every other section and the tempo be. -->
+          <button class="clear-part" data-clear-part data-play type="button">Clear</button>
+          <button class="done" data-done data-play type="button">Done</button>
+        </div>
       </div>
       {
         SECTIONS.map((section) => (

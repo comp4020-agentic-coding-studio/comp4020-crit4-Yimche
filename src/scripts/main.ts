@@ -6,6 +6,7 @@
 import {
   DEFAULT_STEPS,
   activeSections,
+  clearSection,
   createState,
   isActive,
   setTempo,
@@ -32,7 +33,7 @@ const editor = document.querySelector<HTMLElement>("[data-editor]");
 const editorTitle = document.querySelector<HTMLElement>("[data-editor-title]");
 
 const CONTROL =
-  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done],[data-load],[data-clear],[data-tune]";
+  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done],[data-clear-part],[data-load],[data-clear],[data-tune]";
 
 const tuneMenu = document.querySelector<HTMLElement>("[data-tune-menu]");
 const loadBtn = document.querySelector<HTMLButtonElement>("[data-load]");
@@ -68,6 +69,16 @@ async function activate(el: Element): Promise<void> {
   if (el.hasAttribute("data-transport")) {
     engine.toggleTransport();
     syncTransport();
+    refreshLights();
+    return;
+  }
+  if (el.hasAttribute("data-clear-part")) {
+    // Wipe just the open musician's part, leaving the others and the tempo be.
+    // The editor stays up so the player sees their grid come back blank.
+    const section = editor?.dataset.section ?? "";
+    state = clearSection(state, section);
+    syncCells();
+    setLoadedTune(null); // an edited grid no longer matches a premade track
     refreshLights();
     return;
   }

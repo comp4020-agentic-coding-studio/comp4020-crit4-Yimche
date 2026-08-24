@@ -633,7 +633,14 @@ header nav {
   text-shadow: 2px 2px 0 var(--line);
 }
 
-.done {
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.done,
+.clear-part {
   font-family: var(--retro);
   font-size: 0.6rem;
   color: var(--ink);
@@ -645,7 +652,15 @@ header nav {
   cursor: pointer;
 }
 
-.done:active {
+/* Clear is the quieter of the two: it undoes work, so it reads as the section's
+   own dim hue rather than the bright confirm colour Done carries. */
+.clear-part {
+  color: var(--text);
+  background: color-mix(in srgb, var(--hue, #e7b23a) 30%, transparent);
+}
+
+.done:active,
+.clear-part:active {
   transform: translate(2px, 2px);
   box-shadow: none;
 }
