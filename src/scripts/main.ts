@@ -52,6 +52,9 @@ async function activate(el: Element): Promise<void> {
     return;
   }
   if (el.hasAttribute("data-conductor")) {
+    // The conductor is inert while a musician's part is open: the popup owns the
+    // interaction until you close it, so a tap on him does nothing.
+    if (editor && !editor.hasAttribute("hidden")) return;
     toggleTransportPanel();
     syncTransport();
     refreshLights();
