@@ -522,6 +522,29 @@ function drawValance(c, W) {
   c.hline(0, 0, W, C.curtainLo);
 }
 
+// A single seamless tile of the same grand valance, for the greeter's pelmet.
+// It copies drawValance's arc verbatim: the scallop abs(sin(pi*x/44)) is the
+// integer-period twin of abs(sin(x/14)) (1/14 == pi/44), so one lobe fills the
+// 44px tile and repeats cleanly. Same fold shading and gold fringe balls; the
+// hem is transparent below each cusp so the stage shows through the arcs. The
+// page scales this up with image-rendering:pixelated, so the greeter's arcs are
+// the exact pixel-art of the scene's valance, not a smoothed CSS approximation.
+function greeterValanceTile() {
+  const period = 44;
+  const valH = 34;
+  const c = new Canvas(period, valH);
+  for (let x = 0; x < period; x++) {
+    const scallop = Math.round(Math.abs(Math.sin((Math.PI * x) / period)) * 13);
+    const fold = Math.sin((x * 2 * Math.PI) / period) * 0.5 + 0.5;
+    for (let y = 0; y < valH - scallop; y++) {
+      const shade = 0.72 + fold * 0.28 - (y / valH) * 0.18;
+      c.set(x, y, lerpCol(C.curtain, C.curtainHi, fold * 0.6, shade));
+    }
+    if (x % 14 === 7) c.set(x, valH - scallop, C.gold); // fringe ball
+  }
+  return c;
+}
+
 // ---- musicians ---------------------------------------------------------
 // A single seated player, in profile facing LEFT (toward the conductor), as a
 // dark silhouette with a cool rim light and a hue-tinted instrument. Feet sit
@@ -729,6 +752,7 @@ save("src/assets/art/lead.png", sectionSprite("trumpet", HUE.lead, 3));
 save("src/assets/art/harmony.png", sectionSprite("violin", HUE.harmony, 3));
 save("src/assets/art/bass.png", sectionSprite("bass", HUE.bass, 2));
 save("src/assets/art/perc.png", sectionSprite("drum", HUE.perc, 2));
+save("src/assets/art/valance.png", greeterValanceTile());
 save("public/card.png", card());
 
 // Contact sheet that composites the sprites onto the scene at their real page

@@ -288,6 +288,142 @@ header nav {
   }
 }
 
+/* ---- The house curtain: greeter overlay, parts on the first click ------- */
+
+.greeter[hidden] {
+  display: none;
+}
+
+.greeter {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+/* One full-viewport button, so a click (or Enter/Space) anywhere takes a seat. */
+.greeter-open {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  /* Transparent: the closed velvet covers the screen on its own, so parting it
+     reveals the stage behind rather than a void that then pops to the scene. */
+  background: transparent;
+  font-family: var(--retro);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.greeter.opening {
+  pointer-events: none; /* the first click starts the show; ignore the rest */
+}
+
+/* Two velvet halves meeting at the centre, each sliding off its own side. */
+.curtain {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 51%; /* a slight overlap so no seam shows down the middle */
+  /* Smooth velvet folds, matching the painted drapes in generate.mjs: each
+     fold sweeps curtainLo -> curtain -> curtainHi and back, no hard bands. */
+  background: repeating-linear-gradient(
+    90deg,
+    #560c1d 0,
+    #8a1530 10px,
+    #bb2846 20px,
+    #8a1530 30px,
+    #560c1d 40px
+  );
+  transition: transform 1.1s cubic-bezier(0.6, 0, 0.2, 1);
+}
+
+.curtain-left {
+  left: 0;
+  border-right: var(--pixel) solid var(--hue-lead);
+}
+
+.curtain-right {
+  right: 0;
+  border-left: var(--pixel) solid var(--hue-lead);
+}
+
+.greeter.opening .curtain-left {
+  transform: translateX(-102%);
+}
+
+.greeter.opening .curtain-right {
+  transform: translateX(102%);
+}
+
+/* A scalloped red valance across the top, lifting away as the curtain opens. */
+.greeter-valance {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* The valance is the scene's own pixel-art valance (generate.mjs ->
+     valance.png), tiled across the top. image-rendering keeps its arcs crisp,
+     and the height is set in vw so one 44x34 lobe scales to about 10.5vw wide,
+     the same arc size as the painted valance behind the opening. */
+  height: 8vw;
+  background-image: var(--valance);
+  background-repeat: repeat-x;
+  background-size: auto 100%;
+  background-position: left top;
+  image-rendering: pixelated;
+  transition: transform 0.9s cubic-bezier(0.6, 0, 0.2, 1);
+}
+
+.greeter.opening .greeter-valance {
+  transform: translateY(-130%);
+}
+
+/* The floating welcome, gently bobbing until the curtain parts. */
+.greeter-text {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  width: 84%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  animation: greeter-float 2.6s ease-in-out infinite alternate;
+}
+
+.greeter-title {
+  color: var(--hue-lead);
+  font-size: clamp(0.8rem, 3.4vw, 1.9rem);
+  line-height: 1.6;
+  text-shadow: var(--pixel) var(--pixel) 0 var(--line);
+}
+
+.greeter-cue {
+  color: var(--text);
+  font-size: clamp(0.5rem, 1.8vw, 0.95rem);
+  line-height: 1.7;
+}
+
+.greeter.opening .greeter-text {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  animation: none;
+}
+
+@keyframes greeter-float {
+  from {
+    transform: translate(-50%, calc(-50% - 6px));
+  }
+
+  to {
+    transform: translate(-50%, calc(-50% + 6px));
+  }
+}
+
 /* ---- Transport, the conductor's pop-up panel over the podium ------------ */
 
 .podium[hidden] {
@@ -499,8 +635,17 @@ header nav {
   .invite,
   .bounce,
   .sheet,
-  .sprite {
+  .sprite,
+  .greeter-text,
+  .curtain,
+  .greeter-valance {
     animation: none;
     transition: none;
+  }
+
+  /* No sweeping curtain: the greeter simply fades away on the first click. */
+  .greeter.opening {
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 }

@@ -314,5 +314,38 @@ window.addEventListener("resize", () => {
     positionEditor(editingGroup);
 });
 
+// ---- the greeter: the house curtain over a cold stage --------------------
+
+// The show opens behind a closed curtain. The first click (or Enter/Space on
+// the full-screen button) parts the velvet, then the overlay is removed so the
+// dim stage and its invite are revealed underneath, exactly as before.
+const greeter = document.querySelector<HTMLElement>("[data-greeter]");
+const greeterBtn = document.querySelector<HTMLButtonElement>("[data-greeter-open]");
+
+function partCurtains(): void {
+  if (!greeter || greeter.classList.contains("opening")) return;
+  greeter.classList.add("opening");
+  let done = false;
+  const finish = (): void => {
+    if (done) return;
+    done = true;
+    greeter.setAttribute("hidden", "");
+  };
+  // Remove the overlay once the curtains have swept clear; a timeout backs the
+  // transition up in case transitionend never fires (e.g. reduced motion).
+  const leftCurtain = greeter.querySelector<HTMLElement>(".curtain-left");
+  leftCurtain?.addEventListener(
+    "transitionend",
+    (event) => {
+      if ((event as TransitionEvent).propertyName === "transform") finish();
+    },
+    { once: true },
+  );
+  window.setTimeout(finish, 1300);
+}
+
+greeterBtn?.addEventListener("click", partCurtains);
+greeterBtn?.focus(); // so a keyboard user can open with Enter/Space straight away
+
 // Cold start: transport reads "Play", stage dim, invite showing.
 syncTransport();

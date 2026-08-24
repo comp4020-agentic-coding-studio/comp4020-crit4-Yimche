@@ -5,6 +5,7 @@ import { DEFAULT_BPM, DEFAULT_STEPS } from "../lib/sequencer.ts";
 
 import stage from "../assets/art/stage.png";
 import stageFg from "../assets/art/stage-fg.png";
+import valance from "../assets/art/valance.png";
 import conductor from "../assets/art/conductor.png";
 import lead from "../assets/art/lead.png";
 import harmony from "../assets/art/harmony.png";
@@ -197,6 +198,30 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
       </p>
     </div>
   </main>
+
+  <!-- The house curtain: a full-screen greeter closed over the stage on load.
+       The first click "takes your seat" and parts the velvet, revealing the
+       dim stage and its invite. One full-viewport button, so a click or
+       Enter/Space anywhere opens it. -->
+  <div class="greeter" data-greeter>
+    <button
+      class="greeter-open"
+      data-greeter-open
+      type="button"
+      aria-label="Take your seat and begin: part the curtains"
+    >
+      <span class="curtain curtain-left" aria-hidden="true"></span>
+      <span class="curtain curtain-right" aria-hidden="true"></span>
+      <span
+        class="greeter-valance"
+        style={`--valance:url(${valance.src})`}
+        aria-hidden="true"></span>
+      <span class="greeter-text">
+        <span class="greeter-title">Welcome to the 8-Bit Orchestra</span>
+        <span class="greeter-cue">Click anywhere to take your seat</span>
+      </span>
+    </button>
+  </div>
 
   <!-- The music layer: hidden until a musician is picked, gone again on Done.
        Every cell lives here from the start so the model and the contract can
