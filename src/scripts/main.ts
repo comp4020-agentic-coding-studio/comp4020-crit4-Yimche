@@ -1,7 +1,7 @@
 // Wire the DOM to the pure sequencer model and the audio engine. The model is
-// the single source of truth; the DOM and the lighting are both projections of
-// it. Pointer events cover mouse and touch; keydown covers the keyboard; a
-// <button> for every control means Space/Enter already work.
+// the single source of truth; the stage lighting and the grids are both
+// projections of it. Pointer events cover mouse and touch; keydown covers the
+// keyboard; a <button> for every control means Space/Enter already work.
 
 import {
   DEFAULT_STEPS,
@@ -11,9 +11,11 @@ import {
   setTempo,
   toggle,
 } from "../lib/sequencer.ts";
+import { SECTIONS } from "../lib/instrument.ts";
 import { AudioEngine } from "../lib/audio.ts";
 
 let state = createState(DEFAULT_STEPS);
+const label = new Map(SECTIONS.map((s) => [s.id, s.label]));
 
 const engine = new AudioEngine(
   () => state,
@@ -24,26 +26,33 @@ const theatre = document.querySelector<HTMLElement>("[data-theatre]");
 const invite = document.querySelector<HTMLElement>("[data-invite]");
 const bpmLabel = document.querySelector<HTMLElement>("[data-bpm]");
 const transportBtn = document.querySelector<HTMLButtonElement>("[data-transport]");
+const transportPanel = document.querySelector<HTMLElement>("[data-transport-panel]");
+const editor = document.querySelector<HTMLElement>("[data-editor]");
+const editorTitle = document.querySelector<HTMLElement>("[data-editor-title]");
 
-// A playable control is any of these; delegation keeps one handler per event.
 const CONTROL =
-  "[data-play][data-section],[data-conductor],[data-transport],[data-tempo],[data-tab]";
+  "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done]";
 
 async function activate(el: Element): Promise<void> {
-  // Any interaction is a user gesture: wake the context and clear the invite.
-  await engine.wake();
+  await engine.wake(); // any interaction is the user gesture the autoplay policy needs
   dismissInvite();
 
-  if (el instanceof HTMLElement && el.dataset.section) {
+  if (el instanceof HTMLElement && el.hasAttribute("data-cell")) {
+    const section = el.dataset.section ?? "";
     const row = Number(el.dataset.row);
     const col = Number(el.dataset.col);
-    state = toggle(state, el.dataset.section, row, col);
-    setPressed(el, isActive(state, el.dataset.section, row, col));
+    state = toggle(state, section, row, col);
+    setPressed(el, isActive(state, section, row, col));
     refreshLights();
     return;
   }
+  if (el instanceof HTMLElement && el.dataset.group) {
+    bounce(el);
+    openEditor(el.dataset.group);
+    return;
+  }
   if (el.hasAttribute("data-conductor")) {
-    // The conductor tap already woke and started the orchestra.
+    toggleTransportPanel();
     syncTransport();
     refreshLights();
     return;
@@ -54,13 +63,13 @@ async function activate(el: Element): Promise<void> {
     refreshLights();
     return;
   }
+  if (el.hasAttribute("data-done")) {
+    closeEditor();
+    return;
+  }
   if (el instanceof HTMLElement && el.dataset.tempo) {
     state = setTempo(state, state.bpm + Number(el.dataset.tempo));
     if (bpmLabel) bpmLabel.textContent = `${state.bpm} BPM`;
-    return;
-  }
-  if (el instanceof HTMLElement && el.dataset.tab) {
-    selectTab(el.dataset.tab);
   }
 }
 
@@ -74,6 +83,52 @@ function setPressed(el: Element, on: boolean): void {
   el.classList.toggle("on", on);
 }
 
+function bounce(el: HTMLElement): void {
+  el.classList.remove("bounce");
+  void el.offsetWidth; // restart the animation
+  el.classList.add("bounce");
+}
+
+// The conductor's transport is his panel: tapping him pops it up over the
+// podium and taps it away again, mirroring how a musician opens their part.
+function toggleTransportPanel(): void {
+  if (!transportPanel) return;
+  const open = transportPanel.hasAttribute("hidden");
+  transportPanel.toggleAttribute("hidden", !open);
+  const conductor = document.querySelector<HTMLElement>("[data-conductor]");
+  conductor?.setAttribute("aria-expanded", String(open));
+  if (open) transportPanel.querySelector<HTMLElement>("[data-transport]")?.focus();
+}
+
+// ---- the music layer: hidden until a musician is picked -----------------
+
+function openEditor(sectionId: string): void {
+  if (!editor) return;
+  for (const rack of editor.querySelectorAll<HTMLElement>("[data-rack]"))
+    rack.toggleAttribute("hidden", rack.dataset.rack !== sectionId);
+  if (editorTitle) editorTitle.textContent = label.get(sectionId) ?? "Part";
+  editor.dataset.section = sectionId;
+  editor.removeAttribute("hidden");
+  for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
+    group.classList.toggle("editing", group.dataset.group === sectionId);
+  editor
+    .querySelector<HTMLElement>(`[data-rack="${sectionId}"] .cell`)
+    ?.focus();
+}
+
+function closeEditor(): void {
+  if (!editor) return;
+  editor.setAttribute("hidden", "");
+  const section = editor.dataset.section;
+  document
+    .querySelector<HTMLElement>(`[data-group="${section}"]`)
+    ?.focus();
+  for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
+    group.classList.remove("editing");
+}
+
+// ---- transport + lighting (derived from the model) ----------------------
+
 function syncTransport(): void {
   if (!transportBtn) return;
   const running = engine.isRunning;
@@ -81,19 +136,17 @@ function syncTransport(): void {
   transportBtn.setAttribute("aria-pressed", String(running));
 }
 
-// The lights are derived from the model each time it changes, never stored
-// separately, so a lit tier can't drift from what is actually playing.
+// Lights are recomputed from the model, never stored, so a lit musician can't
+// drift from what is actually scheduled.
 function refreshLights(): void {
   const live = engine.isRunning ? new Set(activeSections(state)) : new Set<string>();
-  for (const tier of document.querySelectorAll<HTMLElement>("[data-tier]")) {
-    tier.classList.toggle("lit", live.has(tier.dataset.tier ?? ""));
-  }
-  theatre?.classList.toggle("full", live.size === 4);
+  for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
+    group.classList.toggle("lit", live.has(group.dataset.group ?? ""));
+  theatre?.classList.toggle("full", live.size === SECTIONS.length);
 }
 
 let painted: number | null = null;
 function paintStep(col: number): void {
-  // Move the playhead and flash the tiers sounding on this beat.
   if (painted !== null) {
     for (const c of document.querySelectorAll(`.cell[data-col="${painted}"]`))
       c.classList.remove("beat");
@@ -102,42 +155,35 @@ function paintStep(col: number): void {
     c.classList.add("beat");
   painted = col;
 
-  document
-    .querySelector("[data-baton]")
-    ?.classList.toggle("swing", col % 2 === 0);
-
+  // Flash whichever musicians are sounding on this beat.
   const firing = new Set<string>();
   for (const cell of document.querySelectorAll<HTMLElement>(
     `.cell.on[data-col="${col}"]`,
   )) {
     if (cell.dataset.section) firing.add(cell.dataset.section);
   }
-  for (const tier of document.querySelectorAll<HTMLElement>("[data-tier]")) {
-    const on = firing.has(tier.dataset.tier ?? "");
-    tier.classList.toggle("flash", on);
-  }
+  for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
+    group.classList.toggle("flash", firing.has(group.dataset.group ?? ""));
 }
 
-function selectTab(id: string): void {
-  for (const tab of document.querySelectorAll<HTMLElement>("[data-tab]"))
-    tab.setAttribute("aria-selected", String(tab.dataset.tab === id));
-  for (const rack of document.querySelectorAll<HTMLElement>("[data-rack]"))
-    rack.classList.toggle("selected", rack.dataset.rack === id);
-  for (const tier of document.querySelectorAll<HTMLElement>("[data-tier]"))
-    tier.classList.toggle("selected", tier.dataset.tier === id);
-}
+// ---- input --------------------------------------------------------------
 
 // Pointer covers mouse and touch; one delegated listener for every control.
 document.addEventListener("pointerdown", (event) => {
   const el = (event.target as Element | null)?.closest(CONTROL);
   if (el) {
-    event.preventDefault(); // avoid the trailing synthetic click double-firing
+    event.preventDefault(); // stop the trailing synthetic click double-firing
     void activate(el);
   }
 });
 
-// Keyboard: Space/Enter activate the focused control; arrows walk the grid.
+// Keyboard: Space/Enter activate the focused control; arrows walk the grid;
+// Escape closes the music layer.
 document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && editor && !editor.hasAttribute("hidden")) {
+    closeEditor();
+    return;
+  }
   const el = (event.target as Element | null)?.closest(CONTROL);
   if (!el) return;
   if (event.key === "Enter" || event.key === " ") {
@@ -145,9 +191,8 @@ document.addEventListener("keydown", (event) => {
     void activate(el);
     return;
   }
-  if (el instanceof HTMLElement && el.dataset.section) {
-    const moved = walkGrid(el, event.key);
-    if (moved) event.preventDefault();
+  if (el instanceof HTMLElement && el.hasAttribute("data-cell")) {
+    if (walkGrid(el, event.key)) event.preventDefault();
   }
 });
 
@@ -155,19 +200,19 @@ function walkGrid(cell: HTMLElement, key: string): boolean {
   const row = Number(cell.dataset.row);
   const col = Number(cell.dataset.col);
   const section = cell.dataset.section;
-  let nextRow = row;
-  let nextCol = col;
-  if (key === "ArrowLeft") nextCol = col - 1;
-  else if (key === "ArrowRight") nextCol = col + 1;
-  else if (key === "ArrowUp") nextRow = row + 1; // up = higher pitch
-  else if (key === "ArrowDown") nextRow = row - 1;
+  let r = row;
+  let c = col;
+  if (key === "ArrowLeft") c -= 1;
+  else if (key === "ArrowRight") c += 1;
+  else if (key === "ArrowUp") r += 1; // up = higher pitch
+  else if (key === "ArrowDown") r -= 1;
   else return false;
   const next = document.querySelector<HTMLElement>(
-    `.cell[data-section="${section}"][data-row="${nextRow}"][data-col="${nextCol}"]`,
+    `.cell[data-section="${section}"][data-row="${r}"][data-col="${c}"]`,
   );
   next?.focus();
   return next !== null;
 }
 
-// Cold start: the transport reads "Play", the stage is dim, the invite shows.
+// Cold start: transport reads "Play", stage dim, invite showing.
 syncTransport();

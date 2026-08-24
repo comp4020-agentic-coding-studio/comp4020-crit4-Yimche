@@ -1,20 +1,19 @@
-/* 8-Bit Orchestra: a side-on pixel theatre you conduct. Dark limited palette,
-   chunky borders, hard-edged shadows for the pixel look; soft glow only where
-   something is meant to read as light. */
+/* 8-Bit Orchestra: an immersive side-on pixel theatre you conduct. The stage,
+   crowd, conductor and each section are pixel-art image layers; the lighting is
+   CSS driven from the pure model, so a lit musician always matches the sound. */
 
 :root {
-  --ink: #0a0e27;
+  --ink: #0a0a16;
   --panel: #141a3a;
   --panel-2: #1a2140;
   --line: #05061a;
   --text: #eef1ff;
-  --muted: #8f97c8;
+  --muted: #9aa0c8;
 
-  /* One hue per section, reused by its tier, tab and grid cells. */
   --hue-lead: #ffd23f;
   --hue-harmony: #ff5d8f;
   --hue-bass: #34d1bf;
-  --hue-perc: #b28dff;
+  --hue-perc: #b98bff;
 
   --pixel: 4px;
   --retro: "Press Start 2P", ui-monospace, "Courier New", monospace;
@@ -24,241 +23,227 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  padding: clamp(0.75rem, 2vw, 2rem);
-  background: radial-gradient(circle at 50% 0%, #161d45 0%, var(--ink) 70%);
+  height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at 50% 12%, #241247 0%, transparent 60%),
+    linear-gradient(180deg, #0d0a1e 0%, #060510 100%);
   color: var(--text);
   font-family: var(--retro);
-  line-height: 1.7;
   -webkit-font-smoothing: none;
+  overflow-x: hidden;
 }
 
-main {
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
-header nav a,
-h1 {
-  font-family: var(--retro);
-}
-
-header nav {
-  font-size: 0.6rem;
-}
-
-header nav a {
-  color: var(--hue-lead);
-  text-decoration: none;
-}
-
-h1 {
-  font-size: clamp(1rem, 3.5vw, 2rem);
-  color: #fff;
-  text-shadow: var(--pixel) var(--pixel) 0 var(--line);
-  letter-spacing: 1px;
-}
-
-h2 {
-  font-size: 0.6rem;
-  color: var(--hue, var(--muted));
-  margin: 0 0 0.5rem;
-}
-
-/* ---- The theatre scene ------------------------------------------------- */
-
-.theatre {
-  position: relative;
-  overflow: hidden;
-  height: clamp(280px, 40vh, 460px);
-  border: var(--pixel) solid var(--line);
-  background: linear-gradient(180deg, #070a20 0%, #101642 55%, #1c1233 100%);
+img {
   image-rendering: pixelated;
 }
 
-/* Raked seating in the foreground left. */
-.house {
+/* Keep the nav landmark for the invariant, out of the immersive view. */
+header nav {
   position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 34%;
-  height: 66%;
-  background: repeating-linear-gradient(
-    155deg,
-    #0c1130 0 18px,
-    #10163e 18px 22px
-  );
-  border-top: var(--pixel) solid #050718;
-  clip-path: polygon(0 30%, 100% 60%, 100% 100%, 0 100%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-.crowd {
-  position: absolute;
-  left: 4%;
-  bottom: 6%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  width: 30%;
-}
-
-.head {
-  width: 14px;
-  height: 18px;
-  background: #060815;
-  border-radius: 6px 6px 0 0;
-  box-shadow: 0 -6px 0 -2px #0a0e27;
-}
-
-/* The stepped stage on the right; each tier a riser, rising to the right. */
-.stage {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 68%;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-evenly;
-  padding: 0 2% 5%;
-}
-
-.tier {
+.app {
   position: relative;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
-  width: 20%;
-  height: calc(34% + var(--tier) * 15%);
+  justify-content: flex-start;
 }
 
-/* Spotlight cone from above; invisible until the tier is lit. */
-.spot {
+/* ---- The stage --------------------------------------------------------- */
+
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: calc(100vh * 384 / 216); /* never taller than the viewport */
+  aspect-ratio: 384 / 216;
+  margin: 0 auto;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.backdrop {
   position: absolute;
-  top: -60%;
-  width: 120%;
-  height: 150%;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--hue) 70%, transparent) 0%,
-    transparent 78%
-  );
-  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
-  opacity: 0;
-  transition: opacity 200ms steps(3);
-  mix-blend-mode: screen;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill; /* stage matches the art's aspect, so no distortion */
+}
+
+.show-title {
+  position: absolute;
+  top: 4%;
+  left: 4%;
+  margin: 0;
+  z-index: 6;
+  font-size: clamp(0.7rem, 2.2vw, 1.6rem);
+  color: #fff;
+  text-shadow: var(--pixel) var(--pixel) 0 var(--line);
+  letter-spacing: 1px;
   pointer-events: none;
 }
 
-.player {
-  width: 62%;
-  aspect-ratio: 1;
-  background: #10163a;
-  border: var(--pixel) solid var(--line);
-  box-shadow: inset 0 0 0 2px #050718;
-  transition: background 120ms steps(2);
-}
-
-.label {
-  margin-top: 6px;
-  font-size: 0.42rem;
-  color: var(--muted);
-  text-align: center;
-}
-
-/* Lit + firing states, driven from the pure model by main.ts. */
-.tier.lit .spot {
-  opacity: 0.55;
-}
-
-.tier.lit .player {
-  background: var(--hue);
-}
-
-.tier.lit .label {
-  color: var(--hue);
-}
-
-.tier.flash .player {
-  box-shadow: 0 0 18px 4px var(--hue), inset 0 0 0 2px #fff;
-}
-
-.tier.selected .label {
-  color: #fff;
-}
-
-/* The conductor: a button, so the invite's "tap the conductor" is real and
-   keyboard-reachable. */
+/* Musicians and conductor: absolutely placed, anchored by their inline
+   left/bottom/width so they stand on the painted floor. */
+.group,
 .conductor {
   position: absolute;
-  bottom: 4%;
-  left: 31%;
   transform: translateX(-50%);
-  width: clamp(56px, 8vw, 96px);
-  height: 40%;
+  transform-origin: bottom center;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  background: transparent;
-  border: none;
   padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
+  z-index: 2;
+}
+
+.sprite {
+  width: 100%;
+  height: auto;
+  display: block;
+  /* Dim at rest: dim is silence made visible. */
+  filter: brightness(0.5) saturate(0.7);
+  transition: filter 140ms steps(3), transform 120ms steps(2);
+}
+
+/* Spotlight cone behind each performer, tinted the section hue. */
+.spot {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  width: 240%;
+  height: 210%;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hue, #fff) 80%, transparent) 0%,
+    transparent 76%
+  );
+  clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
+  opacity: 0;
+  mix-blend-mode: screen;
+  transition: opacity 180ms steps(3);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .spot-director {
-  --hue: #fff6cf;
-  top: -50%;
-  width: 200%;
-  height: 160%;
+  --hue: #fff3cf;
+  bottom: 20%;
+  width: 260%;
+  height: 240%;
 }
 
-.theatre.awake .spot-director {
-  opacity: 0.6;
+.stage.awake .spot-director {
+  opacity: 0.55;
 }
 
-.baton {
-  width: 60%;
-  height: 48%;
-  background: #dfe4ff;
-  border: var(--pixel) solid var(--line);
-  border-radius: 40% 40% 20% 20%;
-  transform-origin: bottom center;
-  transition: transform 90ms steps(2);
+.tag {
+  margin-top: 4px;
+  font-size: clamp(0.32rem, 0.9vw, 0.5rem);
+  color: var(--hue, var(--muted));
+  text-shadow: 2px 2px 0 var(--line);
+  opacity: 0;
+  transition: opacity 140ms steps(2);
+  white-space: nowrap;
 }
 
-.baton.swing {
-  transform: rotate(-12deg);
+.group:hover .tag,
+.group:focus-visible .tag,
+.group.lit .tag,
+.group.editing .tag {
+  opacity: 1;
 }
 
-.podium {
-  width: 100%;
-  height: 22%;
-  background: #2a2140;
-  border: var(--pixel) solid var(--line);
+/* Lit + firing, driven from the model. */
+.group.lit .sprite {
+  filter: brightness(1.15) saturate(1.2)
+    drop-shadow(0 0 10px var(--hue));
 }
 
-.conductor:focus-visible {
-  outline: var(--pixel) solid var(--hue-lead);
+.group.lit .spot {
+  opacity: 0.5;
+}
+
+.group.flash .sprite {
+  filter: brightness(1.5) saturate(1.3) drop-shadow(0 0 16px var(--hue));
+  transform: translateY(-6%);
+}
+
+.group.editing {
+  outline: var(--pixel) dashed var(--hue);
   outline-offset: 4px;
+}
+
+.group:focus-visible,
+.conductor:focus-visible {
+  outline: var(--pixel) solid #fff;
+  outline-offset: 4px;
+}
+
+.conductor .sprite {
+  filter: brightness(0.6);
+}
+
+.stage.awake .conductor .sprite {
+  filter: brightness(1.1) drop-shadow(0 0 8px #fff3cf);
+}
+
+@keyframes bounce {
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+  30% {
+    transform: translateX(-50%) translateY(-18%);
+  }
+  55% {
+    transform: translateX(-50%) translateY(0);
+  }
+  72% {
+    transform: translateX(-50%) translateY(-7%);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.bounce {
+  animation: bounce 520ms steps(6);
 }
 
 .invite {
   position: absolute;
   left: 50%;
-  bottom: 12%;
+  bottom: 30%;
   transform: translateX(-50%);
   margin: 0;
   padding: 0.7rem 1rem;
-  max-width: 80%;
+  max-width: 74%;
   text-align: center;
-  font-size: clamp(0.5rem, 1.6vw, 0.8rem);
+  line-height: 1.7;
+  font-size: clamp(0.45rem, 1.5vw, 0.8rem);
   color: var(--ink);
   background: var(--hue-lead);
   border: var(--pixel) solid var(--line);
   box-shadow: var(--pixel) var(--pixel) 0 var(--line);
+  z-index: 6;
+  pointer-events: none;
   animation: nudge 1.6s steps(2) infinite;
 }
 
@@ -268,42 +253,62 @@ h2 {
   }
 }
 
-/* ---- Transport --------------------------------------------------------- */
+/* ---- Transport, the conductor's pop-up panel over the podium ------------ */
 
-.transport {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  margin: 1rem 0;
-  flex-wrap: wrap;
+.podium[hidden] {
+  display: none;
 }
 
-.transport button,
-.tab {
+.podium {
+  position: absolute;
+  left: 36%;
+  bottom: 58%;
+  transform: translateX(-50%);
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem;
+  background: color-mix(in srgb, var(--ink) 86%, transparent);
+  border: var(--pixel) solid var(--line);
+  box-shadow: var(--pixel) var(--pixel) 0 var(--line);
+  white-space: nowrap;
+}
+
+/* A little pointer from the panel down toward the conductor's baton. */
+.podium::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(-2 * var(--pixel));
+  width: var(--pixel);
+  height: calc(2 * var(--pixel));
+  transform: translateX(-50%);
+  background: var(--line);
+}
+
+.podium button {
   font-family: var(--retro);
-  font-size: 0.6rem;
+  font-size: 0.5rem;
   color: var(--text);
   background: var(--panel-2);
   border: var(--pixel) solid var(--line);
-  box-shadow: var(--pixel) var(--pixel) 0 var(--line);
-  padding: 0.7rem 0.9rem;
-  cursor: pointer;
-  min-height: 44px;
-  min-width: 44px;
-}
-
-.transport button:active,
-.tab:active,
-.cell:active {
-  transform: translate(2px, 2px);
   box-shadow: 2px 2px 0 var(--line);
+  padding: 0.4rem 0.5rem;
+  min-height: 34px;
+  min-width: 34px;
+  cursor: pointer;
 }
 
-.bpm {
-  font-size: 0.7rem;
+.podium button:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.podium .bpm {
+  font-size: 0.5rem;
   color: var(--hue-lead);
-  min-width: 6.5rem;
+  min-width: 4.6rem;
   text-align: center;
 }
 
@@ -312,102 +317,154 @@ h2 {
   color: var(--ink);
 }
 
-button:focus-visible,
-.cell:focus-visible {
-  outline: var(--pixel) solid #fff;
-  outline-offset: 2px;
-}
+/* ---- The music layer (bottom sheet, hidden until a musician is picked) -- */
 
-/* ---- Section tabs (phone) and racks ------------------------------------ */
-
-.tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.8rem;
-  overflow-x: auto;
-}
-
-.tab[aria-selected="true"] {
-  background: var(--hue);
-  color: var(--ink);
-}
-
-.racks {
-  display: grid;
-  gap: 1rem;
-}
-
-.rack {
+.editor[hidden] {
   display: none;
-  background: var(--panel);
-  border: var(--pixel) solid var(--line);
-  padding: 0.8rem;
 }
 
-.rack.selected {
-  display: block;
+.editor {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* the stage above stays clickable to switch parts */
+}
+
+/* A floating panel with no chrome: transparent, no slide, it just appears over
+   the scene. The cells and buttons carry their own backing, so the parts read
+   without a solid sheet behind them. */
+.sheet {
+  pointer-events: auto;
+  width: min(1100px, 96vw);
+  max-height: 62vh;
+  overflow: auto;
+  margin: 0 0.5rem 0.5rem;
+  padding: 0.8rem 1rem 1rem;
+  background: transparent;
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--hue, var(--text));
+  text-shadow: 2px 2px 0 var(--line);
+}
+
+.done {
+  font-family: var(--retro);
+  font-size: 0.6rem;
+  color: var(--ink);
+  background: var(--hue-lead);
+  border: var(--pixel) solid var(--line);
+  box-shadow: 2px 2px 0 var(--line);
+  padding: 0.6rem 1rem;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.done:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.rack[hidden] {
+  display: none;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(16, 34px);
-  gap: 3px;
-  overflow-x: auto;
-  padding-bottom: 4px;
+  grid-template-columns: repeat(16, 1fr);
+  gap: 4px;
 }
 
+/* Warm, theatre-matched cells: dark velvet-plum wells, brass edges, downbeats
+   picked out a touch lighter. A placed note glows in the section's own hue. */
 .cell {
   aspect-ratio: 1;
   min-width: 0;
   padding: 0;
-  background: var(--panel-2);
-  border: 2px solid var(--line);
+  background: #2a1622;
+  border: 2px solid #140810;
+  box-shadow: inset 0 0 0 1px #ffffff14;
   cursor: pointer;
 }
 
-/* Downbeat columns tinted so the four beats read at a glance. */
 .cell[data-col="0"],
 .cell[data-col="4"],
 .cell[data-col="8"],
 .cell[data-col="12"] {
-  background: #232c56;
+  background: #3d2033;
 }
 
 .cell.on {
   background: var(--hue);
-  box-shadow: inset 0 0 0 2px #ffffffaa;
+  border-color: var(--goldedge, #e7b23a);
+  box-shadow:
+    inset 0 0 0 2px #fff6e0cc,
+    0 0 8px 1px color-mix(in srgb, var(--hue) 70%, transparent);
 }
 
 .cell.beat {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--hue-lead);
   outline-offset: -2px;
 }
 
 .cell.on.beat {
-  box-shadow: 0 0 12px 2px var(--hue), inset 0 0 0 2px #fff;
+  box-shadow:
+    0 0 14px 3px var(--hue),
+    inset 0 0 0 2px #fff;
 }
 
-/* ---- Desktop: show the whole ensemble at once -------------------------- */
+.cell:focus-visible {
+  outline: 3px solid #fff6e0;
+  outline-offset: -1px;
+}
 
-@media (min-width: 900px) {
-  .tabs {
-    display: none;
-  }
-  .rack {
-    display: block;
-  }
-  .racks {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* Phone: the stage sits as a tall-friendly band; the grid scrolls so cells
+   stay thumb-sized. */
+@media (max-width: 640px) {
   .grid {
-    grid-template-columns: repeat(16, 1fr);
-    overflow-x: visible;
+    grid-template-columns: repeat(16, 34px);
+    overflow-x: auto;
+  }
+  .sheet {
+    max-height: 70vh;
+  }
+  /* On a small stage the transport would swamp the conductor, so it keeps its
+     spot above the podium but shrinks to stay clear of the musicians. */
+  .podium {
+    gap: 0.2rem;
+    padding: 0.25rem;
+  }
+  .podium button {
+    font-size: 0.42rem;
+    min-height: 30px;
+    min-width: 30px;
+    padding: 0.3rem 0.35rem;
+  }
+  .podium .bpm {
+    font-size: 0.42rem;
+    min-width: 3.8rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .invite,
-  .baton {
+  .bounce,
+  .sheet,
+  .sprite {
     animation: none;
     transition: none;
   }

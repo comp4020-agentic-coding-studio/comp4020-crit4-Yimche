@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
+    "art": "node scripts/art/generate.mjs",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",

@@ -3,8 +3,26 @@ import Layout from "../layouts/Layout.astro";
 import { SECTIONS } from "../lib/instrument.ts";
 import { DEFAULT_BPM, DEFAULT_STEPS } from "../lib/sequencer.ts";
 
-// Rows render high pitch at the top, low at the bottom, so the grid reads like
-// a stave. data-row stays the model's index (0 = lowest).
+import stage from "../assets/art/stage.png";
+import conductor from "../assets/art/conductor.png";
+import lead from "../assets/art/lead.png";
+import harmony from "../assets/art/harmony.png";
+import bass from "../assets/art/bass.png";
+import perc from "../assets/art/perc.png";
+
+const art: Record<string, ImageMetadata> = { lead, harmony, bass, perc };
+
+// Where each section stands on the stage, as % of the aspect-locked stage box.
+// These mirror the risers painted by scripts/art/generate.mjs (side-on
+// cross-section: sections step up and back to the right), so each cluster of
+// musicians stands on its own tier at every size. Anchored bottom, centred left.
+const spot: Record<string, { left: number; bottom: number; w: number }> = {
+  lead: { left: 46, bottom: 24, w: 16 },
+  harmony: { left: 58, bottom: 31, w: 16 },
+  bass: { left: 71, bottom: 37, w: 13 },
+  perc: { left: 85, bottom: 43, w: 12 },
+};
+
 const rowsTopDown = (rows: number) =>
   Array.from({ length: rows }, (_, i) => rows - 1 - i);
 const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
@@ -12,99 +30,98 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
 
 <Layout
   title="8-Bit Orchestra"
-  description="Conduct a pixel-art chiptune orchestra in your browser: place notes on each section's grid, set the tempo, and the ensemble loops live while the stage lights follow the sound."
+  description="Conduct a pixel-art chiptune orchestra in your browser: wake the conductor, tap a musician to write their part, and the ensemble loops live while the stage lights follow the sound."
 >
   <header>
-    <nav aria-label="Primary">
-      <a href="./">8-Bit Orchestra</a>
-    </nav>
+    <nav aria-label="Primary"><a href="./">8-Bit Orchestra</a></nav>
   </header>
 
-  <main>
-    <h1>8-Bit Orchestra</h1>
+  <main class="app">
+    <h1 class="show-title">8-Bit Orchestra</h1>
 
-    <!-- The side-on theatre. It doubles as the state display: dim at rest,
-         each tier lights when its section is sounding. -->
-    <div class="theatre" data-theatre>
-      <div class="house">
-        <div class="crowd" aria-hidden="true">
-          {Array.from({ length: 14 }, () => <span class="head"></span>)}
-        </div>
-      </div>
+    <!-- The immersive stage. It doubles as the state display: each musician is
+         dim until its part is playing, then lit in the section's colour. -->
+    <div class="stage" data-theatre>
+      <img class="backdrop" src={stage.src} alt="" width={stage.width} height={stage.height} />
 
-      <div class="stage" aria-hidden="true">
-        {
-          SECTIONS.map((section, i) => (
-            <div
-              class="tier"
-              data-tier={section.id}
-              style={`--tier: ${i}; --hue: var(--hue-${section.id});`}
-            >
-              <span class="spot"></span>
-              <span class="player"></span>
-              <span class="label">{section.label}</span>
-            </div>
-          ))
-        }
-      </div>
+      {
+        SECTIONS.filter((s) => s.id in spot).map((section) => (
+          <button
+            class="group"
+            data-group={section.id}
+            data-play
+            type="button"
+            aria-haspopup="dialog"
+            aria-label={`Write the ${section.label} part`}
+            style={`left:${spot[section.id].left}%;bottom:${spot[section.id].bottom}%;width:${spot[section.id].w}%;--hue:var(--hue-${section.id})`}
+          >
+            <span class="spot" aria-hidden="true" />
+            <img class="sprite" src={art[section.id].src} alt="" />
+            <span class="tag">{section.label}</span>
+          </button>
+        ))
+      }
 
       <button
         class="conductor"
         data-conductor
         data-play
         type="button"
-        aria-label="Wake the orchestra"
+        aria-label="Wake the orchestra and set the tempo"
+        aria-haspopup="true"
+        aria-expanded="false"
+        style="left:36%;bottom:26%;width:9%"
       >
-        <span class="spot spot-director"></span>
-        <span class="baton" data-baton></span>
-        <span class="podium"></span>
+        <span class="spot spot-director" aria-hidden="true"></span>
+        <img class="sprite" src={conductor.src} alt="" />
       </button>
 
-      <p class="invite" data-invite>Tap the conductor to wake the orchestra</p>
-    </div>
+      <!-- The conductor sets the tempo, so the transport is his panel: it pops
+           up over the podium when you tap him, the way tapping a musician opens
+           their part. Hidden until then, not a permanent HUD. -->
+      <div
+        class="podium"
+        data-transport-panel
+        role="group"
+        aria-label="Conductor's transport"
+        hidden
+      >
+        <button data-tempo="-5" data-play type="button" aria-label="Slower">−</button>
+        <span class="bpm" data-bpm aria-live="polite">{DEFAULT_BPM} BPM</span>
+        <button data-tempo="5" data-play type="button" aria-label="Faster">+</button>
+        <button data-transport data-play type="button" aria-pressed="false">Play</button>
+      </div>
 
-    <!-- The conductor's transport. -->
-    <div class="transport" role="group" aria-label="Conductor">
-      <button data-tempo="-5" data-play type="button" aria-label="Slower">−</button>
-      <span class="bpm" data-bpm aria-live="polite">{DEFAULT_BPM} BPM</span>
-      <button data-tempo="5" data-play type="button" aria-label="Faster">+</button>
-      <button data-transport data-play type="button" aria-pressed="false">Play</button>
+      <p class="invite" data-invite>
+        Tap the conductor to wake the orchestra, then tap a musician to write
+        their part.
+      </p>
     </div>
+  </main>
 
-    <!-- Phone: one section at a time via tabs. Desktop shows every rack. -->
-    <div class="tabs" role="tablist" aria-label="Sections">
+  <!-- The music layer: hidden until a musician is picked, gone again on Done.
+       Every cell lives here from the start so the model and the contract can
+       see it. -->
+  <div class="editor" data-editor role="dialog" aria-label="Write a part" hidden>
+    <div class="sheet">
+      <div class="sheet-head">
+        <h2 data-editor-title>Part</h2>
+        <button class="done" data-done data-play type="button">Done</button>
+      </div>
       {
-        SECTIONS.map((section, i) => (
-          <button
-            class="tab"
-            data-tab={section.id}
-            data-play
-            type="button"
-            role="tab"
-            aria-selected={i === 0 ? "true" : "false"}
-            style={`--hue: var(--hue-${section.id});`}
-          >
-            {section.label}
-          </button>
-        ))
-      }
-    </div>
-
-    <div class="racks">
-      {
-        SECTIONS.map((section, i) => (
-          <section
-            class:list={["rack", { selected: i === 0 }]}
+        SECTIONS.map((section) => (
+          <div
+            class="rack"
             data-rack={section.id}
-            aria-label={section.label}
-            style={`--hue: var(--hue-${section.id});`}
+            style={`--hue:var(--hue-${section.id})`}
+            hidden
           >
-            <h2>{section.label}</h2>
             <div class="grid" data-grid={section.id}>
               {rowsTopDown(section.rows).map((row) =>
                 cols.map((col) => (
                   <button
                     class="cell"
+                    data-cell
                     data-play
                     data-section={section.id}
                     data-row={row}
@@ -116,11 +133,11 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
                 )),
               )}
             </div>
-          </section>
+          </div>
         ))
       }
     </div>
-  </main>
+  </div>
 
   <script src="../scripts/main.ts"></script>
 </Layout>
