@@ -135,7 +135,6 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         >
           Load
         </button>
-        <button class="tool" data-clear data-play type="button">Clear</button>
         <button
           class="tool"
           data-save
@@ -145,6 +144,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         >
           Save
         </button>
+        <button class="tool" data-clear data-play type="button">Clear</button>
 
         <!-- Save's pop-up: the current stage read back as a paste-in TUNES
              entry. The textarea holds the exact source to drop into presets.ts,
@@ -152,6 +152,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
              blank for the player. Dismissed by tapping away or Escape, like the
              track picker. -->
         <div class="save-panel" data-save-panel role="dialog" aria-label="Copy this track" hidden>
+          <p class="dev-note">For developer use only.</p>
           <p class="save-hint" data-save-hint>
             Paste this into the <code>TUNES</code> array in <code>presets.ts</code>.
           </p>
@@ -170,6 +171,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
              same TUNES the model loads, so the list can never drift from what
              actually plays. -->
         <div class="tune-menu" data-tune-menu role="menu" aria-label="Premade tracks" hidden>
+          <p class="dev-note" role="presentation">For developer use only.</p>
           {
             TUNES.map((tune, i) => (
               <button

@@ -154,7 +154,6 @@ header nav {
   background: var(--panel-2);
   border: var(--pixel) solid var(--line);
   border-radius: 0;
-  box-shadow: 2px 2px 0 var(--line);
   padding: 0.4rem 0.5rem;
   min-height: 30px;
   cursor: pointer;
@@ -167,8 +166,20 @@ header nav {
 }
 
 .tool:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
+  transform: translate(1px, 1px);
+}
+
+/* A caption at the top of the Load and Save pop-ups: these two are authoring
+   tools (pick a premade track, dump the stage back to source), not part of the
+   play, so they are flagged for developer use. Muted and small, with a hairline
+   under it to set it off from the list or the source below. */
+.dev-note {
+  margin: 0 0 2px;
+  padding: 0.1rem 0.4rem 0.35rem;
+  font-family: var(--retro);
+  font-size: clamp(0.4rem, 1.1vw, 0.56rem);
+  color: var(--muted);
+  border-bottom: var(--pixel) solid color-mix(in srgb, var(--muted) 30%, transparent);
 }
 
 /* The track picker: a pop-up list under the Load button, in the transport's
