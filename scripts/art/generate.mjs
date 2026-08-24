@@ -49,11 +49,6 @@ const C = {
   black: hx("#0c0810"),
 };
 
-// The stage's own rear wall (cyclorama), a cool deep blue so the space behind
-// the orchestra reads as a distinct volume from the warm maroon auditorium
-// behind the crowd.
-const STAGE_WALL = { top: hx("#1c2a5a"), bot: hx("#0b1230") };
-
 // Section hues, kept in step with global.css so a lit sprite matches its light.
 const HUE = {
   lead: hx("#ffd23f"),
@@ -149,6 +144,7 @@ function background() {
   // the stage, but BEFORE the deck so the stage still hides the curtain's feet.
   drawLeftPillar(c);
   drawLeftLeg(c);
+  tuckLeftLegBehindPlanks(c); // plank wall cuts the drape's foot, so it reads as behind the stage
 
   // Stage: a raised, tiered platform the orchestra stands on.
   drawStage(c);
@@ -180,6 +176,7 @@ function foreground() {
   drawAudienceRows(c);
   drawLeftPillar(c);
   drawLeftLeg(c);
+  tuckLeftLegBehindPlanks(c);
   drawStage(c);
   drawPodium(c);
   drawFootlights(c);
@@ -293,18 +290,34 @@ function ledgeArc(x, a, b, top, depth) {
   return top - Math.round(depth * (1 - u * u));
 }
 
-// The stage's rear wall: fills the proscenium opening from the arch down to the
-// back deck in a cool blue vertical gradient, a cyclorama distinct from the
-// warm house.
+// The stage's rear: a cool-blue cyclorama filling the upper opening (a distinct
+// colour from the warm house behind the crowd), with a wooden plank wall rising
+// from the back deck only as high as the stage light reaches, just above the
+// seated back sections. So the background stays its own colour, but from the top
+// sections' feet up past their heads the wall is the same plank surface as the
+// stage below, grounding them rather than floating them against open sky.
+const STAGE_WALL = { top: hx("#1c2a5a"), bot: hx("#0b1230") };
+// The plank band caps about halfway up the seated back players (feet ~157, head
+// ~126), so it grounds them from the waist down; blue cyclorama above.
+const BACK_WALL_TOP = 141;
+
 function drawStageBackWall(c) {
   const x0 = PROS.leftX;
   const x1 = PROS.rightX;
   const yTop = PROS.archY;
   const yBot = UPPER_TOP;
+  // cool-blue cyclorama across the whole opening, darkening toward the floor
   for (let y = yTop; y < yBot; y++) {
     const t = (y - yTop) / (yBot - yTop);
     c.hline(x0, y, x1 - x0, lerpCol(STAGE_WALL.top, STAGE_WALL.bot, t));
   }
+  // plank wall over the lower band only, from the light line down to the deck
+  for (let x = x0; x < x1; x++) c.vline(x, BACK_WALL_TOP, yBot - BACK_WALL_TOP, C.woodLo);
+  // vertical support beams, aligned with the stage body's, up the plank band
+  for (let sx = STAGE_LEFT + 6; sx < x1; sx += 24)
+    c.vline(sx, BACK_WALL_TOP, yBot - BACK_WALL_TOP, C.woodSeam);
+  // a lit top edge where the planks meet the cyclorama, catching the stage light
+  for (let x = x0; x < x1; x++) c.set(x, BACK_WALL_TOP, C.woodHi);
 }
 
 // One clean, stage-wide tier: a lit, gently bowed walking surface with gold
@@ -320,30 +333,13 @@ function drawTier(c, a, b, top) {
   }
 }
 
-// The back deck's walking surface: a lit wooden platform that recedes from a
-// front lip (just below where the front players' feet land) back up under the
-// whole seated group, so harmony and perc stand ON a floor instead of floating
-// against the cyclorama. Each group recedes upward (back players sit higher), so
-// the floor must reach well behind the front lip to carry their feet too; the
-// surface darkens toward the back so it reads as receding into the stage.
-const PLATFORM_LIP = 160; // front edge + glowing nosing, level with the front
-// players' feet (measured against the rendered page); below it is plain plank
-// riser, so the lit lip reads at their feet rather than stranding them up the wall
-const PLATFORM_DEPTH = 16; // deep enough to seat the backmost player on floor
-function drawBackPlatform(c) {
-  const x0 = STAGE_LEFT;
-  for (let x = x0; x < STAGE.W; x++) {
-    const lip = ledgeArc(x, x0, STAGE.W, PLATFORM_LIP, TIER_DEPTH);
-    const back = lip - PLATFORM_DEPTH;
-    for (let y = back; y <= lip; y++) {
-      const t = (y - back) / PLATFORM_DEPTH; // 0 at the back .. 1 at the lit lip
-      c.set(x, y, lerpCol(C.woodLo, C.woodHi, t));
-    }
-    c.set(x, back, C.woodSeam); // shadow seam where the floor meets the back wall
-    c.set(x, lip + 1, C.gold); // gold nosing along the platform's front edge
-    c.set(x, lip + 2, C.goldLo);
-  }
-}
+// The back deck is drawn at the same line the top sprites are anchored to
+// (UPPER_FOOT in index.astro = UPPER_TOP + 2), exactly as the front deck's tier
+// matches its own sprites, so the top sections stand ON the deck rather than a
+// couple of pixels above it. Below it is plain plank riser down to the front
+// deck, and behind it the plank back wall, so they read as standing on a tier of
+// the same plank stage as everyone else.
+const BACK_DECK_TOP = UPPER_TOP + 2;
 
 // The stage: a solid raised platform whose FRONT edge curves out toward the
 // audience like an amphitheatre's rounded orchestra floor. It is built as TWO
@@ -359,9 +355,9 @@ function drawStage(c) {
   for (let x = x0; x < W; x++) c.vline(x, bodyTop, apronFrontY(x) - bodyTop, C.woodLo);
   // vertical support beams for structure, not a flat plank wall
   for (let sx = x0 + 6; sx < W; sx += 24) c.vline(sx, bodyTop, apronFrontY(sx) - bodyTop, C.woodSeam);
-  // the two full-width decks: the back deck as a receding platform under the top
-  // sections' feet, then the front tier over it
-  drawBackPlatform(c);
+  // the two full-width decks: the back deck at the top sections' feet, then the
+  // front tier over it
+  drawTier(c, x0, W, BACK_DECK_TOP);
   drawTier(c, x0, W, LOWER_TOP);
   // a slim music stand behind each section
   for (const { x0: a, x1: b, top } of RISERS) {
@@ -443,6 +439,21 @@ function drawLeftPillar(c) {
 }
 function drawLeftLeg(c) {
   drawLeg(c, PROS.leftX + 6, PROS.archY + 4, CURTAIN_HEM, 20);
+}
+
+// Tuck the left curtain leg behind the plank wall. The drape hangs full length,
+// then the plank band is redrawn over its foot so the plank's top edge cleanly
+// cuts it: the curtain reads as descending behind the stage rather than hanging
+// in front of the deck. Scoped to the drape's own column so the beams and the
+// rest of the back wall are untouched.
+function tuckLeftLegBehindPlanks(c) {
+  const x0 = STAGE_LEFT;
+  const x1 = STAGE_LEFT + 28;
+  const yBot = UPPER_TOP;
+  for (let x = x0; x < x1; x++) c.vline(x, BACK_WALL_TOP, yBot - BACK_WALL_TOP, C.woodLo);
+  for (let sx = STAGE_LEFT + 6; sx < x1; sx += 24)
+    c.vline(sx, BACK_WALL_TOP, yBot - BACK_WALL_TOP, C.woodSeam);
+  for (let x = x0; x < x1; x++) c.set(x, BACK_WALL_TOP, C.woodHi);
 }
 function drawRightLeg(c) {
   drawLeg(c, PROS.rightX - 6 - 20, PROS.archY + 4, CURTAIN_HEM, 20);
