@@ -344,12 +344,14 @@ function drawFootlights(c) {
 
 // Shared proscenium geometry, so the left curtain (drawn behind the stage) and
 // the front frame (drawn over it) agree on where the arch springs from.
-const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 6, archY: 30 };
+// The gilt frame around the opening: its top bar rides high near the very top of
+// the stage, and its right pillar reaches the right border of the stage box.
+const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 1, archY: 12 };
 
-// The main curtain is flown right out (raised): its legs are pulled up so only a
-// short drape hangs from the arch, gathered high behind the top section rather
-// than dropping down the sides of the opening.
-const CURTAIN_HEM = PROS.archY + 44;
+// The main curtain: its legs hang from the raised frame down to just behind the
+// upper deck, drawn in the back pass so the stage body paints over their lower
+// ends and the drapes frame the stage from behind the top section.
+const CURTAIN_HEM = UPPER_TOP - 10;
 
 function drawGiltPillar(c, px, dir) {
   const { H } = STAGE;
@@ -384,14 +386,11 @@ function drawProscenium(c) {
 
 // Soft ambient beams, both hung from the same height just below the arch and
 // dropping straight down, so the resting stage already reads as lit from one
-// consistent truss (matching the interactive cones the page overlays). Drawn
-// BEFORE the stage and run down PAST the upper deck, so the top section paints
-// over their lower ends: each cone is cut where it meets the top deck and so
-// reads as descending from behind the top section, not floating above it.
+// consistent truss (matching the interactive cones the page overlays).
 function drawAmbientBeams(c) {
   const { archY } = PROS;
-  beam(c, 210, archY + 6, 210, 180);
-  beam(c, 300, archY + 6, 300, 180);
+  beam(c, 210, archY + 6, 210, 152);
+  beam(c, 300, archY + 6, 300, 138);
 }
 
 function drawLeg(c, x0, y0, y1, w) {
@@ -417,7 +416,8 @@ function beam(c, apexX, apexY, footX, footY) {
 
 function drawValance(c, W) {
   // Grand red valance across the very top, scalloped lower edge, gold fringe.
-  const valH = 26;
+  // Kept shallow so the raised gilt frame sits just beneath it.
+  const valH = 12;
   for (let x = 0; x < W; x++) {
     const scallop = Math.round(Math.abs(Math.sin(x / 14)) * 9);
     const fold = Math.sin(x / 6) * 0.5 + 0.5;
