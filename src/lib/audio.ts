@@ -31,6 +31,10 @@ export class AudioEngine {
   private pulse50: PeriodicWave | null = null;
   private pulse25: PeriodicWave | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
+  // The lighting for each scheduled step fires on its own short setTimeout, up to
+  // SCHEDULE_AHEAD out. Held here so Stop can cancel the ones still pending;
+  // otherwise a late paint relights a spotlight after Stop has cleared the rig.
+  private paintTimers = new Set<ReturnType<typeof setTimeout>>();
   private nextStepTime = 0;
   private step = 0;
   private running = false;
@@ -84,6 +88,10 @@ export class AudioEngine {
       clearInterval(this.timer);
       this.timer = null;
     }
+    // Drop every still-pending step light, so no beam or musician flashes back on
+    // after the rig has been cleared. The caller repaints the (now dark) rig.
+    for (const t of this.paintTimers) clearTimeout(t);
+    this.paintTimers.clear();
   }
 
   toggleTransport(): void {
@@ -119,9 +127,14 @@ export class AudioEngine {
       else this.playTone(section, frequency, gain, time, state);
     }
     if (col % 4 === 0) this.click(time);
-    // Fire the lighting near the moment the step actually sounds.
+    // Fire the lighting near the moment the step actually sounds. Track the
+    // timer so Stop can cancel it before it relights a cleared rig.
     const delayMs = Math.max(0, (time - ctx.currentTime) * 1000);
-    setTimeout(() => this.onStep(col), delayMs);
+    const paint = setTimeout(() => {
+      this.paintTimers.delete(paint);
+      this.onStep(col);
+    }, delayMs);
+    this.paintTimers.add(paint);
   }
 
   private playTone(
