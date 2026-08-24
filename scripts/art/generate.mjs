@@ -320,6 +320,31 @@ function drawTier(c, a, b, top) {
   }
 }
 
+// The back deck's walking surface: a lit wooden platform that recedes from a
+// front lip (just below where the front players' feet land) back up under the
+// whole seated group, so harmony and perc stand ON a floor instead of floating
+// against the cyclorama. Each group recedes upward (back players sit higher), so
+// the floor must reach well behind the front lip to carry their feet too; the
+// surface darkens toward the back so it reads as receding into the stage.
+const PLATFORM_LIP = 160; // front edge + glowing nosing, level with the front
+// players' feet (measured against the rendered page); below it is plain plank
+// riser, so the lit lip reads at their feet rather than stranding them up the wall
+const PLATFORM_DEPTH = 16; // deep enough to seat the backmost player on floor
+function drawBackPlatform(c) {
+  const x0 = STAGE_LEFT;
+  for (let x = x0; x < STAGE.W; x++) {
+    const lip = ledgeArc(x, x0, STAGE.W, PLATFORM_LIP, TIER_DEPTH);
+    const back = lip - PLATFORM_DEPTH;
+    for (let y = back; y <= lip; y++) {
+      const t = (y - back) / PLATFORM_DEPTH; // 0 at the back .. 1 at the lit lip
+      c.set(x, y, lerpCol(C.woodLo, C.woodHi, t));
+    }
+    c.set(x, back, C.woodSeam); // shadow seam where the floor meets the back wall
+    c.set(x, lip + 1, C.gold); // gold nosing along the platform's front edge
+    c.set(x, lip + 2, C.goldLo);
+  }
+}
+
 // The stage: a solid raised platform whose FRONT edge curves out toward the
 // audience like an amphitheatre's rounded orchestra floor. It is built as TWO
 // clean layers: a raised back deck (harmony + perc) stepping down to a front
@@ -334,8 +359,9 @@ function drawStage(c) {
   for (let x = x0; x < W; x++) c.vline(x, bodyTop, apronFrontY(x) - bodyTop, C.woodLo);
   // vertical support beams for structure, not a flat plank wall
   for (let sx = x0 + 6; sx < W; sx += 24) c.vline(sx, bodyTop, apronFrontY(sx) - bodyTop, C.woodSeam);
-  // the two full-width decks, back first then front over it
-  drawTier(c, x0, W, UPPER_TOP);
+  // the two full-width decks: the back deck as a receding platform under the top
+  // sections' feet, then the front tier over it
+  drawBackPlatform(c);
   drawTier(c, x0, W, LOWER_TOP);
   // a slim music stand behind each section
   for (const { x0: a, x1: b, top } of RISERS) {
