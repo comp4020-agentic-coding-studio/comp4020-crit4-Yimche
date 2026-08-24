@@ -82,19 +82,15 @@ header nav {
   object-fit: fill; /* stage matches the art's aspect, so no distortion */
 }
 
-/* The show title hangs inside the proscenium opening (the framed "main view"
-   rectangle), centred under the arch in the dark air above the players, rather
-   than floating in the top-left corner over the house. */
+/* The show title sits in the top-left of the stage box, just on screen. */
 .show-title {
   position: absolute;
-  top: 17%;
-  left: 63%;
-  transform: translateX(-50%);
+  top: 3%;
+  left: 3%;
   margin: 0;
   z-index: 6;
   font-size: clamp(0.7rem, 2.2vw, 1.6rem);
   color: #fff;
-  text-align: center;
   text-shadow: var(--pixel) var(--pixel) 0 var(--line);
   letter-spacing: 1px;
   pointer-events: none;

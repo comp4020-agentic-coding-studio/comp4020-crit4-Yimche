@@ -17,11 +17,14 @@ const art: Record<string, ImageMetadata> = { lead, harmony, bass, perc };
 // scripts/art/generate.mjs: lead + bass sit on the lower front step, harmony +
 // perc on the upper back step, interlocking left to right. Anchored bottom,
 // centred left.
+// Widths are small: each section is about the size of a front-row audience
+// member, so the players read as people on the stage rather than looming over
+// the house.
 const spot: Record<string, { left: number; bottom: number; w: number }> = {
-  lead: { left: 43, bottom: 22, w: 16 },
-  harmony: { left: 57, bottom: 32, w: 16 },
-  bass: { left: 72, bottom: 22, w: 13 },
-  perc: { left: 86, bottom: 32, w: 12 },
+  lead: { left: 43, bottom: 21, w: 11 },
+  harmony: { left: 57, bottom: 31, w: 11 },
+  bass: { left: 72, bottom: 21, w: 9 },
+  perc: { left: 86, bottom: 31, w: 8 },
 };
 
 // Every spotlight hangs from the same lighting truss near the top of the stage,
@@ -45,9 +48,9 @@ const beams = [
   })),
   {
     id: "director",
-    left: 36,
-    height: beamHeight(26),
-    width: beamWidth(beamHeight(26)),
+    left: 38,
+    height: beamHeight(27),
+    width: beamWidth(beamHeight(27)),
     hue: "#fff3cf",
   },
 ];
@@ -114,7 +117,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         aria-label="Wake the orchestra and set the tempo"
         aria-haspopup="true"
         aria-expanded="false"
-        style="left:36%;bottom:26%;width:6%"
+        style="left:38%;bottom:27%;width:4%"
       >
         <img class="sprite" src={conductor.src} alt="" />
       </button>

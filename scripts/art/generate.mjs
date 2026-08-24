@@ -67,26 +67,30 @@ const STAGE = { W: 384, H: 216 };
 // lead + bass sit low and harmony + perc sit high, interlocking. `top` is the y
 // of the walking surface; sprites stand with their feet here. Mirrored by the
 // `spot` map in index.astro.
-const LOWER_TOP = 168;
-const UPPER_TOP = 146;
+// Two curved tiers, zig-zagged left to right. The ledges are narrow, sized to
+// the small (crowd-scale) section sprites the page now draws on them.
+const LOWER_TOP = 170;
+const UPPER_TOP = 150;
 const RISERS = [
-  { id: "lead", x0: 142, x1: 188, top: LOWER_TOP },
-  { id: "harmony", x0: 197, x1: 243, top: UPPER_TOP },
-  { id: "bass", x0: 252, x1: 298, top: LOWER_TOP },
-  { id: "perc", x0: 307, x1: 353, top: UPPER_TOP },
+  { id: "lead", x0: 150, x1: 182, top: LOWER_TOP },
+  { id: "harmony", x0: 204, x1: 236, top: UPPER_TOP },
+  { id: "bass", x0: 261, x1: 293, top: LOWER_TOP },
+  { id: "perc", x0: 315, x1: 347, top: UPPER_TOP },
 ];
-const STAGE_LEFT = 138; // left edge of the round platform
-const PODIUM = { x0: 118, x1: 148, top: 158 };
-const APRON_BOTTOM = 198; // stage front ends here; below is understage shadow
+// The conductor's podium is now a raised block of the stage itself (same wood,
+// no gap), a step proud of the lower tier at the front-left where he stands.
+const STAGE_LEFT = 126; // left edge of the platform, wide enough to carry the podium
+const PODIUM = { x0: 128, x1: 166, top: 158 };
+const APRON_BOTTOM = 200; // stage front ends here; below is understage shadow
 
-// The stage front is an arc, bowing toward the audience at its centre so the
-// platform reads as a rounded amphitheatre floor. Shared by the stage body and
-// the footlights so both trace the same curve.
+// The stage front is an arc. It now bows the OTHER way: the centre dips DOWN
+// toward the audience (nearest) and the sides ride up, so the platform reads as
+// curving out toward the house. Shared by the stage body and the footlights.
 const apronFrontY = (x) => {
   const mid = (STAGE_LEFT + STAGE.W) / 2;
   const half = (STAGE.W - STAGE_LEFT) / 2;
   const u = (x - mid) / half; // -1 .. 1
-  return Math.round(APRON_BOTTOM - (1 - u * u) * 10);
+  return Math.round(APRON_BOTTOM - u * u * 12);
 };
 
 // ---- background: side-on cross-section of a theatre --------------------
@@ -160,31 +164,31 @@ function drawChandelier(c, cx, cy) {
 
 function drawAudience(c) {
   const { H } = STAGE;
-  // A curved amphitheatre bowl of red velvet seats seen from the side. The rake
-  // is CONCAVE: it drops fast near the stage and flattens toward the back, so
-  // the seating sweeps up-and-around like a Greek theatron rather than a flat
-  // ramp. Each bench also bows, and the bowl is packed full of patrons.
+  // A curved amphitheatre bowl of red velvet seats filling the WHOLE house on
+  // the left: from the back wall high up, down to the aisle at the bottom, and
+  // hard against the left edge. The rake is a gentle concave curve so the bowl
+  // sweeps round like a theatron without leaving the lower-left corner bare.
   const xNear = 150; // front row, right up against the round stage front
-  const xFar = 2;
-  const yNear = 204; // front baseline, low by the apron
-  const yFar = 56; // back baseline, high up-left
-  // concave bowl curve: t is 0 back .. 1 front, raised to a power so the near
-  // rows fall away steeply and the far rows stack tightly up the back wall.
+  const xFar = 0; // hard against the left wall
+  const yNear = 210; // front baseline, low by the apron
+  const yFar = 46; // back baseline, high up-left under the valance
+  // t is 0 back .. 1 front; a gentle power keeps rows spread down into the
+  // lower-left instead of clustering by the stage.
   const rake = (x) => {
     const t = (x - xFar) / (xNear - xFar);
-    return Math.round(yFar + (yNear - yFar) * Math.pow(Math.max(0, t), 1.7));
+    return Math.round(yFar + (yNear - yFar) * Math.pow(Math.max(0, t), 1.25));
   };
 
   // Carpeted bowl beneath the seats.
   for (let x = xFar; x <= xNear; x++) c.vline(x, rake(x), H - rake(x), C.seatDark);
 
-  // Draw back rows first so nearer rows overlap them. Eight tightly-stacked rows
-  // fill the whole bowl.
-  const rows = 8;
+  // Draw back rows first so nearer rows overlap them. Ten tightly-stacked rows,
+  // shifted left, fill the whole bowl.
+  const rows = 10;
   for (let r = rows - 1; r >= 0; r--) {
     const t = r / (rows - 1); // 0 front .. 1 back
-    const cx = Math.round(xNear - 10 - t * (xNear - xFar - 18));
-    const half = Math.round(34 - t * 15); // wider in front
+    const cx = Math.round(xNear - 22 - t * (xNear - xFar - 26));
+    const half = Math.round(38 - t * 16); // wider in front
     const h = Math.round(15 - t * 7); // taller in front
     const bow = Math.max(1, Math.round(5 - t * 3)); // row curvature, less at back
     const baseY = rake(cx);
@@ -218,14 +222,14 @@ function drawAudience(c) {
   }
 }
 
-// A shallow arc across a ledge: the surface bows so the platform reads as a
-// rounded thrust rather than a flat plank. Returns y for a given x, dipping
-// `depth` px lower at the outer ends (concave, curving away toward the centre).
+// A shallow arc across a ledge, matching the stage's curve: the surface dips
+// `depth` px lower at its CENTRE and rides up at the ends, so the tiers echo the
+// rounded front rather than sitting flat.
 function ledgeArc(x, a, b, top, depth) {
   const mid = (a + b) / 2;
   const half = (b - a) / 2 || 1;
   const u = (x - mid) / half; // -1 .. 1
-  return top + Math.round(depth * u * u);
+  return top + Math.round(depth * (1 - u * u));
 }
 
 // The stage: a solid raised platform whose FRONT edge curves out toward the
@@ -264,16 +268,23 @@ function drawStage(c) {
   }
 }
 
+// The conductor's podium: a raised wooden dais that is part of the stage, not a
+// separate block. Same wood, gold nosing, a short front face down to the lower
+// tier, so it reads as a step proud of the deck at the front-left.
 function drawPodium(c) {
   const { x0, x1, top } = PODIUM;
-  const { H } = STAGE;
-  for (let y = top; y < H - 6; y++) {
-    const band = Math.floor((y - top) / 4) % 2;
-    c.hline(x0, y, x1 - x0, band ? C.podium : C.podiumHi);
+  const foot = LOWER_TOP + 6; // front face runs down to just past the lower tier
+  for (let x = x0; x <= x1; x++) {
+    const y = ledgeArc(x, x0, x1, top, 2);
+    c.vline(x, y, foot - y, C.wood); // dais body
+    c.set(x, y, C.woodHi); // lit top
+    c.set(x, y + 1, C.woodHi);
+    c.set(x, y + 3, C.gold); // gold nosing
+    c.set(x, y + 4, C.goldLo);
   }
-  c.hline(x0, top, x1 - x0, C.gold); // gilt edge
-  c.vline(x0, top, H - 6 - top, C.black);
-  c.vline(x1 - 1, top, H - 6 - top, C.black);
+  // side shadows so the dais stands proud of the surrounding deck
+  c.vline(x0, top, foot - top, C.woodLo);
+  c.vline(x1, top, foot - top, C.woodLo);
 }
 
 function drawFootlights(c) {
@@ -516,13 +527,13 @@ function card() {
     }
   }
   // Place performers with the same fractional anchors as the page (zig-zag:
-  // lead + bass low, harmony + perc high).
-  const f = 4;
-  placeFoot(c, scaleUp(conductorSprite(), f), 0.36, 0.26);
-  placeFoot(c, scaleUp(sectionSprite("trumpet", HUE.lead, 3), f), 0.43, 0.22);
-  placeFoot(c, scaleUp(sectionSprite("violin", HUE.harmony, 3), f), 0.57, 0.32);
-  placeFoot(c, scaleUp(sectionSprite("bass", HUE.bass, 2), f), 0.72, 0.22);
-  placeFoot(c, scaleUp(sectionSprite("drum", HUE.perc, 2), f), 0.86, 0.32);
+  // lead + bass low, harmony + perc high), at the small crowd-matched scale.
+  const f = 2;
+  placeFoot(c, scaleUp(conductorSprite(), f), 0.38, 0.27);
+  placeFoot(c, scaleUp(sectionSprite("trumpet", HUE.lead, 3), f), 0.43, 0.21);
+  placeFoot(c, scaleUp(sectionSprite("violin", HUE.harmony, 3), f), 0.57, 0.31);
+  placeFoot(c, scaleUp(sectionSprite("bass", HUE.bass, 2), f), 0.72, 0.21);
+  placeFoot(c, scaleUp(sectionSprite("drum", HUE.perc, 2), f), 0.86, 0.31);
   // Title band.
   c.rect(0, H - 150, W, 150, [10, 10, 24, 175]);
   text(c, "8-BIT ORCHESTRA", 60, H - 120, 10, hx("#ffd23f"));
@@ -580,11 +591,11 @@ save("public/card.png", card());
 // anchors, so `pnpm art --sheet` shows what the live stage will look like.
 if (process.argv.includes("--sheet")) {
   const c = background();
-  placeFoot(c, conductorSprite(), 0.36, 0.26);
-  placeFoot(c, sectionSprite("trumpet", HUE.lead, 3), 0.43, 0.22);
-  placeFoot(c, sectionSprite("violin", HUE.harmony, 3), 0.57, 0.32);
-  placeFoot(c, sectionSprite("bass", HUE.bass, 2), 0.72, 0.22);
-  placeFoot(c, sectionSprite("drum", HUE.perc, 2), 0.86, 0.32);
+  placeFoot(c, conductorSprite(), 0.38, 0.27);
+  placeFoot(c, sectionSprite("trumpet", HUE.lead, 3), 0.43, 0.21);
+  placeFoot(c, sectionSprite("violin", HUE.harmony, 3), 0.57, 0.31);
+  placeFoot(c, sectionSprite("bass", HUE.bass, 2), 0.72, 0.21);
+  placeFoot(c, sectionSprite("drum", HUE.perc, 2), 0.86, 0.31);
   writeFileSync("/tmp/contact.png", scaleUp(c, 3).encodePNG());
   console.log("wrote /tmp/contact.png");
 }
