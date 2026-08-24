@@ -113,11 +113,15 @@ async function activate(el: Element): Promise<void> {
   }
   if (el.hasAttribute("data-clear")) {
     closeTuneMenu();
+    // Clear halts the show too: stop the conductor so an empty stage is also a
+    // silent, stopped one rather than a running loop over blank grids.
+    if (engine.isRunning) engine.stop();
     // Sweep every part back to silence, keeping the current tempo so Clear is a
     // blank grid rather than a full reset of the conductor's tempo too.
     state = { ...createState(state.steps), bpm: state.bpm };
     syncCells();
     setLoadedTune(null); // a blank grid is no track
+    syncTransport(); // the transport button falls back to "Play"
     refreshLights();
     return;
   }
