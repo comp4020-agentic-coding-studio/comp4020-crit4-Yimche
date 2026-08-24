@@ -149,7 +149,7 @@ header nav {
 
 .tool {
   font-family: var(--retro);
-  font-size: clamp(0.34rem, 1vw, 0.5rem);
+  font-size: clamp(0.48rem, 1.4vw, 0.72rem);
   color: var(--text);
   background: var(--panel-2);
   border: var(--pixel) solid var(--line);
@@ -199,7 +199,7 @@ header nav {
   justify-content: space-between;
   gap: 0.8rem;
   font-family: var(--retro);
-  font-size: clamp(0.34rem, 1vw, 0.5rem);
+  font-size: clamp(0.48rem, 1.4vw, 0.72rem);
   color: var(--text);
   background: var(--panel-2);
   border: var(--pixel) solid var(--line);
@@ -258,7 +258,7 @@ header nav {
 .save-hint {
   margin: 0;
   font-family: var(--retro);
-  font-size: clamp(0.32rem, 0.9vw, 0.45rem);
+  font-size: clamp(0.44rem, 1.2vw, 0.62rem);
   line-height: 1.5;
   color: var(--muted);
 }
@@ -278,7 +278,7 @@ header nav {
   box-sizing: border-box;
   resize: vertical;
   font-family: var(--mono, ui-monospace, monospace);
-  font-size: 0.7rem;
+  font-size: 0.86rem;
   line-height: 1.3;
   color: var(--text);
   background: var(--panel-2);
@@ -456,7 +456,7 @@ header nav {
   max-width: 74%;
   text-align: center;
   line-height: 1.7;
-  font-size: clamp(0.45rem, 1.5vw, 0.8rem);
+  font-size: clamp(0.56rem, 1.8vw, 0.98rem);
   color: var(--ink);
   background: var(--hue-lead);
   border: var(--pixel) solid var(--line);
@@ -581,14 +581,14 @@ header nav {
 
 .greeter-title {
   color: var(--hue-lead);
-  font-size: clamp(0.8rem, 3.4vw, 1.9rem);
+  font-size: clamp(1.1rem, 4.6vw, 2.6rem);
   line-height: 1.6;
   text-shadow: var(--pixel) var(--pixel) 0 var(--line);
 }
 
 .greeter-cue {
   color: var(--text);
-  font-size: clamp(0.5rem, 1.8vw, 0.95rem);
+  font-size: clamp(0.7rem, 2.4vw, 1.3rem);
   line-height: 1.7;
 }
 
@@ -645,7 +645,7 @@ header nav {
 
 .podium button {
   font-family: var(--retro);
-  font-size: 0.5rem;
+  font-size: 0.7rem;
   color: var(--text);
   background: var(--panel-2);
   border: var(--pixel) solid var(--line);
@@ -663,9 +663,9 @@ header nav {
 }
 
 .podium .bpm {
-  font-size: 0.5rem;
+  font-size: 0.7rem;
   color: var(--hue-lead);
-  min-width: 4.6rem;
+  min-width: 5.4rem;
   text-align: center;
 }
 
@@ -713,7 +713,7 @@ header nav {
 
 .sheet-head h2 {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.95rem;
   color: var(--hue, var(--text));
   text-shadow: 2px 2px 0 var(--line);
 }
@@ -727,7 +727,7 @@ header nav {
 .done,
 .clear-part {
   font-family: var(--retro);
-  font-size: 0.6rem;
+  font-size: 0.8rem;
   color: var(--ink);
   background: var(--hue-lead);
   border: var(--pixel) solid var(--line);
@@ -819,14 +819,14 @@ header nav {
     padding: 0.25rem;
   }
   .podium button {
-    font-size: 0.42rem;
+    font-size: 0.58rem;
     min-height: 30px;
     min-width: 30px;
     padding: 0.3rem 0.35rem;
   }
   .podium .bpm {
-    font-size: 0.42rem;
-    min-width: 3.8rem;
+    font-size: 0.58rem;
+    min-width: 4.4rem;
   }
   /* On the narrow stage the title is bigger relative to the box, so drop the
      tools a little to sit clear beneath it. */
