@@ -74,12 +74,13 @@ const STAGE = { W: 384, H: 216 };
 //   [conductor] [lead]     [bass]
 // `top` is the y of the walking surface; sprites stand with their feet here.
 // Mirrored by the `spot` map in index.astro.
-const LOWER_TOP = 170;
-const UPPER_TOP = 150;
+const LOWER_TOP = 182;
+const UPPER_TOP = 162;
 // How far each deck arches up at its centre. The decks bow the OPPOSITE way to
 // the main stage floor: the apron dips DOWN in the middle, so the decks ride UP
 // in the middle. Mirrored by index.astro so the sprites sit on the same curve.
-const TIER_DEPTH = 8;
+// Kept shallow so the deck crowns sit low rather than bowing high at centre.
+const TIER_DEPTH = 5;
 const RISERS = [
   { id: "lead", x0: 176, x1: 208, top: LOWER_TOP },
   { id: "harmony", x0: 214, x1: 246, top: UPPER_TOP },
@@ -89,8 +90,9 @@ const RISERS = [
 // The conductor's podium is now a raised block of the stage itself (same wood,
 // no gap), a step proud of the lower tier at the front-left where he stands.
 const STAGE_LEFT = 126; // left edge of the platform, wide enough to carry the podium
-const PODIUM = { x0: 128, x1: 166, top: 158 };
-const APRON_BOTTOM = 200; // stage front ends here; below is understage shadow
+const PODIUM = { x0: 128, x1: 166, top: 170 };
+const APRON_BOTTOM = 212; // stage front ends here, low so it lines up with the
+// bottom of the seating bank; below is a thin strip of understage shadow
 
 // The stage front is an arc. It now bows the OTHER way: the centre dips DOWN
 // toward the audience (nearest) and the sides ride up, so the platform reads as
@@ -367,10 +369,11 @@ function drawFootlights(c) {
 // the stage, and its right pillar reaches the right border of the stage box.
 const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 1, archY: 12 };
 
-// The main curtain: its legs hang from the raised frame down to just behind the
-// upper deck, drawn in the back pass so the stage body paints over their lower
-// ends and the drapes frame the stage from behind the top section.
-const CURTAIN_HEM = UPPER_TOP - 10;
+// The main curtain: its legs hang from the raised frame all the way down to the
+// lowered stage, drawn in the back pass so the stage body paints over their
+// lower ends and the drapes frame the stage from behind the top section. Reaches
+// just past the deck crown so it meets the stage with no gap at the sides.
+const CURTAIN_HEM = UPPER_TOP - 2;
 
 function drawGiltPillar(c, px, dir) {
   const { H } = STAGE;
@@ -408,8 +411,10 @@ function drawProscenium(c) {
 // consistent truss (matching the interactive cones the page overlays).
 function drawAmbientBeams(c) {
   const { archY } = PROS;
-  beam(c, 210, archY + 6, 210, 152);
-  beam(c, 300, archY + 6, 300, 138);
+  // Run down past the lowered deck crown so the stage body cuts each cone at the
+  // deck, the same as before the stage was lowered.
+  beam(c, 210, archY + 6, 210, UPPER_TOP + 6);
+  beam(c, 300, archY + 6, 300, UPPER_TOP + 6);
 }
 
 function drawLeg(c, x0, y0, y1, w) {

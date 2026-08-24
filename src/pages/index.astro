@@ -29,7 +29,7 @@ const art: Record<string, ImageMetadata> = { lead, harmony, bass, perc };
 // per deck, sampled at the performer's x.
 const STAGE_W = 384;
 const STAGE_H = 216;
-const TIER_DEPTH = 8;
+const TIER_DEPTH = 5;
 const ARC_MID = (126 + STAGE_W) / 2; // centre of the stage-wide tier span
 const ARC_HALF = (STAGE_W - 126) / 2;
 const deckY = (top: number, leftPct: number) => {
@@ -44,8 +44,8 @@ const FOOT_SINK = 4; // stage-pixels
 const bottomOn = (top: number, leftPct: number) =>
   Math.round(((STAGE_H - (deckY(top, leftPct) + FOOT_SINK)) / STAGE_H) * 1000) / 10;
 
-const LOWER_TOP = 170; // front deck: conductor, lead, bass
-const UPPER_TOP = 150; // back deck: harmony, perc
+const LOWER_TOP = 182; // front deck: conductor, lead, bass
+const UPPER_TOP = 162; // back deck: harmony, perc
 const spot: Record<string, { left: number; bottom: number; w: number }> = {
   lead: { left: 50, bottom: bottomOn(LOWER_TOP, 50), w: 11 },
   harmony: { left: 60, bottom: bottomOn(UPPER_TOP, 60), w: 11 },
@@ -57,7 +57,7 @@ const spot: Record<string, { left: number; bottom: number; w: number }> = {
 const conductorBottom =
   Math.round(
     ((STAGE_H -
-      ((158 - Math.round(2 * (1 - Math.pow(((37 / 100) * STAGE_W - 147) / 19, 2)))) +
+      ((170 - Math.round(2 * (1 - Math.pow(((37 / 100) * STAGE_W - 147) / 19, 2)))) +
         FOOT_SINK)) /
       STAGE_H) *
       1000,
