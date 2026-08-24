@@ -172,6 +172,9 @@ function foreground() {
   drawStage(c);
   drawPodium(c);
   drawFootlights(c);
+  // Curtain legs over the stage so the drapes frame the opening full length,
+  // then the gilt frame and valance over their tops.
+  drawCurtainLegs(c);
   drawProscenium(c);
   drawValance(c, W);
   return c;
@@ -370,10 +373,11 @@ function drawFootlights(c) {
 const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 1, archY: 12 };
 
 // The main curtain: its legs hang from the raised frame all the way down to the
-// lowered stage, drawn in the back pass so the stage body paints over their
-// lower ends and the drapes frame the stage from behind the top section. Reaches
-// just past the deck crown so it meets the stage with no gap at the sides.
-const CURTAIN_HEM = UPPER_TOP - 2;
+// bottom of the stage, so the drapes frame the full opening at both sides rather
+// than stopping at the deck. Drawn in the front-of-house layer (over the stage,
+// under the performers) so the full length reads; the side legs sit clear of the
+// musicians, and the conductor renders on top of the near leg.
+const CURTAIN_HEM = APRON_BOTTOM;
 
 function drawGiltPillar(c, px, dir) {
   const { H } = STAGE;
@@ -440,8 +444,10 @@ function beam(c, apexX, apexY, footX, footY) {
 
 function drawValance(c, W) {
   // Grand red valance across the very top, scalloped lower edge, gold fringe.
-  // Kept shallow so the raised gilt frame sits just beneath it.
-  const valH = 12;
+  // Deep enough that its scalloped edge drapes over the top of the gilt frame
+  // and the curtain tops, so the frame reads as hanging from beneath it with no
+  // dark gap between the two.
+  const valH = 22;
   for (let x = 0; x < W; x++) {
     const scallop = Math.round(Math.abs(Math.sin(x / 14)) * 9);
     const fold = Math.sin(x / 6) * 0.5 + 0.5;
