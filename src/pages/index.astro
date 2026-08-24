@@ -46,11 +46,14 @@ const bottomOn = (top: number, leftPct: number) =>
 
 const LOWER_TOP = 182; // front deck: conductor, lead, bass
 const UPPER_TOP = 162; // back deck: harmony, perc
+// Harmony and perc sit a touch high off the back deck; drop them 2 stage-pixels
+// so their feet meet the plank like the front row does.
+const UPPER_FOOT = UPPER_TOP + 2;
 const spot: Record<string, { left: number; bottom: number; w: number }> = {
   lead: { left: 50, bottom: bottomOn(LOWER_TOP, 50), w: 11 },
-  harmony: { left: 60, bottom: bottomOn(UPPER_TOP, 60), w: 11 },
+  harmony: { left: 60, bottom: bottomOn(UPPER_FOOT, 60), w: 11 },
   bass: { left: 73, bottom: bottomOn(LOWER_TOP, 73), w: 9 },
-  perc: { left: 84, bottom: bottomOn(UPPER_TOP, 84), w: 8 },
+  perc: { left: 84, bottom: bottomOn(UPPER_FOOT, 84), w: 8 },
 };
 
 // The conductor stands on the low podium at stage front-left, its own short arc.
