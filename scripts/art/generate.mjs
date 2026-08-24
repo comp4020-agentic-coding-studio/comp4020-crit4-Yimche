@@ -98,6 +98,11 @@ function background() {
   // Chandelier over the house, warm glow.
   drawChandelier(c, 58, 40);
 
+  // The stage-left curtain is drawn FIRST, so the stage and its apron paint
+  // over its lower half: the drape reads as wrapping around behind the stage
+  // rather than hanging flat in front of it.
+  drawLeftCurtain(c);
+
   // Auditorium: raked rows of red velvet seats on the left.
   drawAudience(c);
 
@@ -105,8 +110,8 @@ function background() {
   drawStage(c);
   drawPodium(c);
 
-  // Proscenium: gold arch and red legs framing the stage; grand valance and a
-  // couple of soft spotlight beams from above. Drawn last so it frames all.
+  // Proscenium front: gold arch, the stage-right leg, footlights and beams.
+  // Drawn last so they frame everything; the left leg already sits behind.
   drawFootlights(c);
   drawProscenium(c);
   drawValance(c, W);
@@ -140,24 +145,28 @@ function drawChandelier(c, cx, cy) {
 
 function drawAudience(c) {
   const { H } = STAGE;
-  // A raked bank of red velvet seats, rows getting higher and smaller to the
-  // left. The near edge (right) meets the stage; a dark rail caps the front.
-  const xNear = 128;
-  const xFar = 6;
-  const yNear = 184;
-  const yFar = 104;
-  const slope = (yNear - yFar) / (xNear - xFar);
-  const yTop = (x) => Math.round(yNear - (x - xNear) * slope);
+  // A big raked bank of red velvet seats seen from the side: the front row sits
+  // low and near the stage (right), and each row behind it steps UP and back to
+  // the left, so the whole house fills the frame instead of a clump in the
+  // corner. `t` runs 0 (front) .. 1 (back).
+  const xNear = 138; // front row, just left of the stage front (x0 = 150)
+  const xFar = 2;
+  const yNear = 198; // front baseline, low
+  const yFar = 74; // back baseline, high up-left
+  const yTop = (x) =>
+    Math.round(yFar + ((x - xFar) / (xNear - xFar)) * (yNear - yFar));
 
   // Carpeted rake beneath the seats.
   for (let x = xFar; x <= xNear; x++) c.vline(x, yTop(x), H - yTop(x), C.seatDark);
-  // Draw far rows first so nearer rows overlap them.
-  const rows = 5;
+
+  // Draw back rows first so nearer rows overlap them.
+  const rows = 6;
   for (let r = rows - 1; r >= 0; r--) {
-    const cx = xNear - 8 - r * ((xNear - xFar - 10) / rows);
+    const t = r / (rows - 1);
+    const cx = Math.round(xNear - 12 - t * (xNear - xFar - 24));
     const y = yTop(cx);
-    const half = Math.round(24 - r * 3); // wider in front
-    const h = 11 - r; // taller in front
+    const half = Math.round(32 - t * 15); // wider in front
+    const h = Math.round(16 - t * 8); // taller in front
     const left = cx - half;
     const w = half * 2;
     // velvet bench: body, lit top rail, dark base
@@ -167,15 +176,16 @@ function drawAudience(c) {
     c.rect(left, y - 2, w, 2, C.seatDark);
     c.hline(left, y, w, C.gold); // brass rail along the row front
     // seated patrons: clear head-and-shoulders silhouettes
-    const patrons = Math.max(3, Math.round(w / 9));
+    const patrons = Math.max(4, Math.round(w / 11));
     const step = w / patrons;
     for (let p = 0; p < patrons; p++) {
       const px = Math.round(left + step * (p + 0.5));
-      const hr = Math.max(2, 3 - Math.floor(r / 2));
-      c.rect(px - hr - 1, y - h - hr, hr * 2 + 3, hr + 2, C.sil); // shoulders
-      c.ellipse(px, y - h - hr - 2, hr, hr, C.sil); // head
-      c.set(px - 1, y - h - hr * 2 - 2, C.silRim); // warm rim
-      c.set(px, y - h - hr * 2 - 2, C.silRim);
+      const hr = Math.max(3, Math.round(5 - t * 2)); // bigger heads in front
+      c.rect(px - hr - 1, y - h - hr - 1, hr * 2 + 3, hr + 3, C.sil); // shoulders
+      c.ellipse(px, y - h - hr - 3, hr, hr, C.sil); // head
+      // warm rim along the top of the head so the crowd reads against the dark
+      c.hline(px - 1, y - h - hr * 2 - 3, 3, C.silRim);
+      c.set(px + hr - 1, y - h - hr - 3, C.silRim);
     }
   }
 }
@@ -233,36 +243,46 @@ function drawFootlights(c) {
   }
 }
 
+// Shared proscenium geometry, so the left curtain (drawn behind the stage) and
+// the front frame (drawn over it) agree on where the arch springs from.
+const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 6, archY: 30 };
+
+function drawGiltPillar(c, px, dir) {
+  const { H } = STAGE;
+  const x = dir > 0 ? px : px - 5; // 6px gilt pillar
+  c.rect(x, PROS.archY, 6, H - PROS.archY, C.curtainLo);
+  c.vline(dir > 0 ? x : x + 5, PROS.archY, H - PROS.archY, C.gold);
+  c.vline(dir > 0 ? x + 5 : x, PROS.archY, H - PROS.archY, C.goldLo);
+}
+
+// The stage-left pillar and its red drape, drawn before the stage so the apron
+// and podium paint over the lower half: the drape wraps behind the stage. It is
+// wide enough to overlap the podium, which is what makes the tuck read.
+function drawLeftCurtain(c) {
+  const { H } = STAGE;
+  drawGiltPillar(c, PROS.leftX, 1);
+  drawLeg(c, PROS.leftX + 6, PROS.archY + 4, H, 20);
+}
+
 function drawProscenium(c) {
-  const { W, H } = STAGE;
-  // Gold arch line across the top of the stage opening, springing from two
-  // pillars: one downstage-left (between house and stage), one at the far edge.
-  const leftX = PODIUM.x0 - 8;
-  const rightX = W - 6;
-  const archY = 30;
-  // pillars
-  for (const [px, dir] of [
-    [leftX, 1],
-    [rightX, -1],
-  ]) {
-    const x = dir > 0 ? px : px - 5; // 6px gilt pillar
-    c.rect(x, archY, 6, H - archY, C.curtainLo);
-    c.vline(dir > 0 ? x : x + 5, archY, H - archY, C.gold);
-    c.vline(dir > 0 ? x + 5 : x, archY, H - archY, C.goldLo);
-  }
-  // arch band with a gentle sag
+  const { H } = STAGE;
+  const { leftX, rightX, archY } = PROS;
+  // Stage-right pillar (the left one is already behind the stage).
+  drawGiltPillar(c, rightX, -1);
+  // arch band with a gentle sag, springing between both pillars
   for (let x = leftX; x <= rightX; x++) {
     const t = (x - leftX) / (rightX - leftX);
     const sag = Math.round(Math.sin(t * Math.PI) * 6);
     c.hline(x, archY + sag, 1, C.gold);
     c.set(x, archY + sag + 1, C.goldLo);
   }
-  // red side legs (drapes) hanging just inside each pillar
-  drawLeg(c, leftX + 6, archY + 4, H - 8, 12);
+  // red stage-right leg (drape) hanging just inside the far pillar
   drawLeg(c, rightX - 5 - 12, archY + 4, H - 8, 12);
-  // soft spotlight beams from the arch onto the mid-stage
-  beam(c, leftX + 40, archY + 8, 210, 150);
-  beam(c, rightX - 70, archY + 8, 300, 130);
+  // Soft ambient beams, both hung from the same height just below the arch and
+  // dropping straight down, so the resting stage already reads as lit from one
+  // consistent truss (matching the interactive cones the page overlays).
+  beam(c, 210, archY + 6, 210, 152);
+  beam(c, 300, archY + 6, 300, 138);
 }
 
 function drawLeg(c, x0, y0, y1, w) {

@@ -12,10 +12,24 @@ const SCHEDULE_AHEAD = 0.1; // how far ahead of currentTime it schedules
 
 type StepListener = (col: number) => void;
 
+// A single-cycle pulse (rectangular) wave of a given duty cycle, as a
+// PeriodicWave. Two duty cycles give the two NES pulse channels their own
+// character: 50% is the full, bright square; 25% is a thinner, reedier tone, so
+// the lead and the harmony read as two different instruments, not one doubled.
+function makePulse(ctx: AudioContext, duty: number, n = 24): PeriodicWave {
+  const real = new Float32Array(n);
+  const imag = new Float32Array(n);
+  for (let i = 1; i < n; i++)
+    real[i] = (2 / (i * Math.PI)) * Math.sin(i * Math.PI * duty);
+  return ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+}
+
 export class AudioEngine {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private noise: AudioBuffer | null = null;
+  private pulse50: PeriodicWave | null = null;
+  private pulse25: PeriodicWave | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private nextStepTime = 0;
   private step = 0;
@@ -49,6 +63,8 @@ export class AudioEngine {
       this.master.gain.setValueAtTime(0.22, this.ctx.currentTime);
       this.master.connect(this.ctx.destination);
       this.noise = this.buildNoise(this.ctx);
+      this.pulse50 = makePulse(this.ctx, 0.5);
+      this.pulse25 = makePulse(this.ctx, 0.25);
     }
     if (this.ctx.state !== "running") await this.ctx.resume();
     if (!this.running) this.start();
@@ -99,7 +115,7 @@ export class AudioEngine {
     const velocity = col % 4 === 0 ? 1 : 0.7; // accent the downbeats
     for (const { section, row } of cellsAt(state, col)) {
       const { frequency, gain } = voiceFor(gestureForCell(section, row, velocity));
-      if (section.timbre === "noise") this.playNoise(gain, frequency, time);
+      if (section.timbre === "noise") this.playDrum(row, section.rows, gain, time);
       else this.playTone(section, frequency, gain, time, state);
     }
     if (col % 4 === 0) this.click(time);
@@ -120,12 +136,24 @@ export class AudioEngine {
     if (!ctx || !master) return;
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
-    osc.type = section.timbre === "triangle" ? "triangle" : "square";
+    if (section.timbre === "triangle") {
+      osc.type = "triangle";
+    } else if (section.id === "harmony" && this.pulse25) {
+      osc.setPeriodicWave(this.pulse25); // reedy 25% pulse
+    } else if (this.pulse50) {
+      osc.setPeriodicWave(this.pulse50); // bright 50% pulse
+    } else {
+      osc.type = "square";
+    }
     osc.frequency.setValueAtTime(frequency, time);
     // Bass rings a touch longer; leads stay plucky. Never exceed the step.
-    const dur = Math.min(section.timbre === "triangle" ? 0.32 : 0.16, stepDuration(state) * 0.95);
+    const dur = Math.min(section.timbre === "triangle" ? 0.34 : 0.18, stepDuration(state) * 0.95);
+    // Attack, a quick decay to a sustain plateau, then release: gives the note
+    // an envelope shape instead of a flat beep, without ever clicking.
+    const sustain = Math.max(0.0001, gain * 0.6);
     env.gain.setValueAtTime(0.0001, time);
-    env.gain.linearRampToValueAtTime(gain, time + 0.006); // soft attack, no click
+    env.gain.linearRampToValueAtTime(gain, time + 0.006);
+    env.gain.exponentialRampToValueAtTime(sustain, time + dur * 0.45);
     env.gain.exponentialRampToValueAtTime(0.0001, time + dur);
     osc.connect(env).connect(master);
     osc.start(time);
@@ -136,7 +164,38 @@ export class AudioEngine {
     };
   }
 
-  private playNoise(gain: number, frequency: number, time: number): void {
+  // A little drum kit rather than one filtered hiss: the pitch row picks the
+  // piece, low to high, so a player can lay down kick / snare / hat patterns.
+  private playDrum(row: number, rows: number, gain: number, time: number): void {
+    const rel = rows <= 1 ? 0 : row / (rows - 1); // 0 low .. 1 high
+    if (rel < 0.34) this.kick(gain, time);
+    else if (rel < 0.67) this.snare(gain, time);
+    else this.hat(gain, time);
+  }
+
+  // Kick: a pitched body that drops fast, no noise, so it thumps.
+  private kick(gain: number, time: number): void {
+    const ctx = this.ctx;
+    const master = this.master;
+    if (!ctx || !master) return;
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(180, time);
+    osc.frequency.exponentialRampToValueAtTime(48, time + 0.11);
+    env.gain.setValueAtTime(Math.min(1, gain * 1.1), time);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.14);
+    osc.connect(env).connect(master);
+    osc.start(time);
+    osc.stop(time + 0.16);
+    osc.onended = () => {
+      osc.disconnect();
+      env.disconnect();
+    };
+  }
+
+  // Snare: a band of noise with a little tonal body across it.
+  private snare(gain: number, time: number): void {
     const ctx = this.ctx;
     const master = this.master;
     if (!ctx || !master || !this.noise) return;
@@ -145,14 +204,36 @@ export class AudioEngine {
     const filter = ctx.createBiquadFilter();
     src.buffer = this.noise;
     filter.type = "bandpass";
-    // Pitch row colours the drum: higher row -> brighter hit.
-    filter.frequency.setValueAtTime(frequency, time);
-    filter.Q.setValueAtTime(0.8, time);
+    filter.frequency.setValueAtTime(1900, time);
+    filter.Q.setValueAtTime(1.1, time);
     env.gain.setValueAtTime(gain, time);
-    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.12);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.13);
     src.connect(filter).connect(env).connect(master);
     src.start(time);
-    src.stop(time + 0.14);
+    src.stop(time + 0.15);
+    src.onended = () => {
+      src.disconnect();
+      filter.disconnect();
+      env.disconnect();
+    };
+  }
+
+  // Hat: a very short slice of bright, high-passed noise.
+  private hat(gain: number, time: number): void {
+    const ctx = this.ctx;
+    const master = this.master;
+    if (!ctx || !master || !this.noise) return;
+    const src = ctx.createBufferSource();
+    const env = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    src.buffer = this.noise;
+    filter.type = "highpass";
+    filter.frequency.setValueAtTime(7000, time);
+    env.gain.setValueAtTime(gain * 0.7, time);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.045);
+    src.connect(filter).connect(env).connect(master);
+    src.start(time);
+    src.stop(time + 0.06);
     src.onended = () => {
       src.disconnect();
       filter.disconnect();

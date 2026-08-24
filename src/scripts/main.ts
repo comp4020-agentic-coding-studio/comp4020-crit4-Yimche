@@ -100,6 +100,16 @@ function toggleTransportPanel(): void {
   if (open) transportPanel.querySelector<HTMLElement>("[data-transport]")?.focus();
 }
 
+// The panel is a transient pop-up, not a permanent HUD: tapping anything that
+// isn't the panel or the conductor dismisses it.
+function closeTransportPanel(): void {
+  if (!transportPanel || transportPanel.hasAttribute("hidden")) return;
+  transportPanel.setAttribute("hidden", "");
+  document
+    .querySelector<HTMLElement>("[data-conductor]")
+    ?.setAttribute("aria-expanded", "false");
+}
+
 // ---- the music layer: hidden until a musician is picked -----------------
 
 function openEditor(sectionId: string): void {
@@ -142,6 +152,10 @@ function refreshLights(): void {
   const live = engine.isRunning ? new Set(activeSections(state)) : new Set<string>();
   for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
     group.classList.toggle("lit", live.has(group.dataset.group ?? ""));
+  // The truss beams follow the same live set (the director beam, keyed
+  // "director", is never in it and stays on the CSS awake rule instead).
+  for (const beam of document.querySelectorAll<HTMLElement>("[data-beam]"))
+    beam.classList.toggle("on", live.has(beam.dataset.beam ?? ""));
   theatre?.classList.toggle("full", live.size === SECTIONS.length);
 }
 
@@ -164,13 +178,25 @@ function paintStep(col: number): void {
   }
   for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
     group.classList.toggle("flash", firing.has(group.dataset.group ?? ""));
+  for (const beam of document.querySelectorAll<HTMLElement>("[data-beam]"))
+    beam.classList.toggle("flash", firing.has(beam.dataset.beam ?? ""));
 }
 
 // ---- input --------------------------------------------------------------
 
 // Pointer covers mouse and touch; one delegated listener for every control.
 document.addEventListener("pointerdown", (event) => {
-  const el = (event.target as Element | null)?.closest(CONTROL);
+  const target = event.target as Element | null;
+  // Dismiss the transport panel on any tap that isn't the panel itself or the
+  // conductor (whose own tap toggles it). So it vanishes when you go elsewhere.
+  if (
+    target &&
+    !target.closest("[data-transport-panel]") &&
+    !target.closest("[data-conductor]")
+  ) {
+    closeTransportPanel();
+  }
+  const el = target?.closest(CONTROL);
   if (el) {
     event.preventDefault(); // stop the trailing synthetic click double-firing
     void activate(el);
@@ -184,6 +210,7 @@ document.addEventListener("keydown", (event) => {
     closeEditor();
     return;
   }
+  if (event.key === "Escape") closeTransportPanel();
   const el = (event.target as Element | null)?.closest(CONTROL);
   if (!el) return;
   if (event.key === "Enter" || event.key === " ") {

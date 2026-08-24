@@ -186,3 +186,7 @@ next time. Cumulative across the course.
   missed the broken path (nothing asserts resolution). For every artefact, name
   what the roster can't see and verify that part by hand. This week the artefact
   is audible and the roster is deaf. (C4.)
+- **Commit and push after every completed series of instructions.** When a batch
+  of requests is finished and `pnpm check` is green, commit the work in legible
+  steps and push, without waiting to be told. The trail should grow with the
+  work, not lag behind it. (C4, at the user's request.)

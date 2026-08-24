@@ -23,6 +23,34 @@ const spot: Record<string, { left: number; bottom: number; w: number }> = {
   perc: { left: 85, bottom: 43, w: 12 },
 };
 
+// Every spotlight hangs from the same lighting truss near the top of the stage,
+// so the cones all descend from one consistent height; only their length varies
+// to reach each performer's own tier. TRUSS is that shared top edge (% down from
+// the top of the stage box).
+const TRUSS = 5;
+const beamHeight = (bottom: number) => 100 - TRUSS - Math.max(0, bottom - 6);
+
+// The four section beams plus the director's, all sharing the truss top. Width
+// scales with length so every cone keeps the same opening angle (width is % of
+// the stage width, height is % of its height; the 0.3 factor matches them).
+const beamWidth = (height: number) => Math.round(height * 0.3);
+const beams = [
+  ...Object.entries(spot).map(([id, s]) => ({
+    id,
+    left: s.left,
+    height: beamHeight(s.bottom),
+    width: beamWidth(beamHeight(s.bottom)),
+    hue: `var(--hue-${id})`,
+  })),
+  {
+    id: "director",
+    left: 36,
+    height: beamHeight(26),
+    width: beamWidth(beamHeight(26)),
+    hue: "#fff3cf",
+  },
+];
+
 const rowsTopDown = (rows: number) =>
   Array.from({ length: rows }, (_, i) => rows - 1 - i);
 const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
@@ -44,6 +72,20 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
     <div class="stage" data-theatre>
       <img class="backdrop" src={stage.src} alt="" width={stage.width} height={stage.height} />
 
+      <!-- The lighting rig: one cone per performer, all hung from the same truss
+           so they descend from a consistent height. Behind the performers. -->
+      <div class="beams" aria-hidden="true">
+        {
+          beams.map((b) => (
+            <span
+              class="beam"
+              data-beam={b.id}
+              style={`left:${b.left}%;top:${TRUSS}%;height:${b.height}%;width:${b.width}%;--hue:${b.hue}`}
+            />
+          ))
+        }
+      </div>
+
       {
         SECTIONS.filter((s) => s.id in spot).map((section) => (
           <button
@@ -55,7 +97,6 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
             aria-label={`Write the ${section.label} part`}
             style={`left:${spot[section.id].left}%;bottom:${spot[section.id].bottom}%;width:${spot[section.id].w}%;--hue:var(--hue-${section.id})`}
           >
-            <span class="spot" aria-hidden="true" />
             <img class="sprite" src={art[section.id].src} alt="" />
             <span class="tag">{section.label}</span>
           </button>
@@ -70,9 +111,8 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
         aria-label="Wake the orchestra and set the tempo"
         aria-haspopup="true"
         aria-expanded="false"
-        style="left:36%;bottom:26%;width:9%"
+        style="left:36%;bottom:26%;width:6%"
       >
-        <span class="spot spot-director" aria-hidden="true"></span>
         <img class="sprite" src={conductor.src} alt="" />
       </button>
 

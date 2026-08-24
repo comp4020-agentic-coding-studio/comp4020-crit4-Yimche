@@ -122,36 +122,44 @@ header nav {
   transition: filter 140ms steps(3), transform 120ms steps(2);
 }
 
-/* Spotlight cone behind each performer, tinted the section hue. */
-.spot {
+/* The lighting rig: spotlight cones hung from a shared truss near the top of
+   the stage, so every beam descends from the same height and only its length
+   changes to reach each performer. Positioned at stage level (not inside a
+   performer) precisely so the apexes line up. Behind the performers. */
+.beams {
   position: absolute;
-  bottom: 8%;
-  left: 50%;
-  width: 240%;
-  height: 210%;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.beam {
+  position: absolute;
   transform: translateX(-50%);
+  transform-origin: top center;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--hue, #fff) 80%, transparent) 0%,
-    transparent 76%
+    color-mix(in srgb, var(--hue, #fff) 85%, transparent) 0%,
+    transparent 88%
   );
-  clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
   opacity: 0;
   mix-blend-mode: screen;
   transition: opacity 180ms steps(3);
-  pointer-events: none;
-  z-index: -1;
 }
 
-.spot-director {
-  --hue: #fff3cf;
-  bottom: 20%;
-  width: 260%;
-  height: 240%;
+/* A lit section's beam glows; the beat flash pushes it brighter still. */
+.beam.on {
+  opacity: 0.5;
 }
 
-.stage.awake .spot-director {
-  opacity: 0.55;
+.beam.flash {
+  opacity: 0.8;
+}
+
+/* The director's beam comes up the moment the orchestra wakes. */
+.stage.awake .beam[data-beam="director"] {
+  opacity: 0.5;
 }
 
 .tag {
@@ -175,10 +183,6 @@ header nav {
 .group.lit .sprite {
   filter: brightness(1.15) saturate(1.2)
     drop-shadow(0 0 10px var(--hue));
-}
-
-.group.lit .spot {
-  opacity: 0.5;
 }
 
 .group.flash .sprite {
