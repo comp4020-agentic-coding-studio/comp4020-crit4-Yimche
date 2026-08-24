@@ -346,10 +346,10 @@ function drawFootlights(c) {
 // the front frame (drawn over it) agree on where the arch springs from.
 const PROS = { leftX: PODIUM.x0 - 8, rightX: STAGE.W - 6, archY: 30 };
 
-// The main curtain is flown out (raised): its legs hang from the arch down to
-// just behind the upper deck and are drawn in the back pass, so the drape frames
-// the stage from behind the top section rather than dropping to the floor.
-const CURTAIN_HEM = UPPER_TOP - 10;
+// The main curtain is flown right out (raised): its legs are pulled up so only a
+// short drape hangs from the arch, gathered high behind the top section rather
+// than dropping down the sides of the opening.
+const CURTAIN_HEM = PROS.archY + 44;
 
 function drawGiltPillar(c, px, dir) {
   const { H } = STAGE;
@@ -385,12 +385,13 @@ function drawProscenium(c) {
 // Soft ambient beams, both hung from the same height just below the arch and
 // dropping straight down, so the resting stage already reads as lit from one
 // consistent truss (matching the interactive cones the page overlays). Drawn
-// BEFORE the stage so the top deck paints over their lower ends: the light
-// descends from behind the top section, not across the front of it.
+// BEFORE the stage and run down PAST the upper deck, so the top section paints
+// over their lower ends: each cone is cut where it meets the top deck and so
+// reads as descending from behind the top section, not floating above it.
 function drawAmbientBeams(c) {
   const { archY } = PROS;
-  beam(c, 210, archY + 6, 210, 152);
-  beam(c, 300, archY + 6, 300, 138);
+  beam(c, 210, archY + 6, 210, 180);
+  beam(c, 300, archY + 6, 300, 180);
 }
 
 function drawLeg(c, x0, y0, y1, w) {
