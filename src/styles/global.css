@@ -82,6 +82,20 @@ header nav {
   object-fit: fill; /* stage matches the art's aspect, so no distortion */
 }
 
+/* The front-of-house overlay lines up pixel-for-pixel with the backdrop but
+   sits above the spotlight beams (both z-index 1; this comes later in the DOM)
+   and below the performers (z-index 2), so the stage deck cuts off each beam's
+   lower end. The beams then read as descending from behind the top section. */
+.stage-fg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 1;
+  pointer-events: none;
+}
+
 /* The show title sits in the top-left of the stage box, just on screen. */
 .show-title {
   position: absolute;

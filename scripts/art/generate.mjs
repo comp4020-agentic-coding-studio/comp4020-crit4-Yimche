@@ -156,6 +156,25 @@ function background() {
   return c;
 }
 
+// A transparent overlay holding only the front-of-house elements: the stage
+// platform, podium, footlights, proscenium frame, valance and the crowd. The
+// page stacks it ABOVE the spotlight beams and BELOW the performers, so a beam
+// descends over the back wall, lights the musician, and is then cut off by the
+// deck in front of it. That is what puts the spotlight beams behind the top
+// section: the stage occludes their lower ends, the same way the painted curtain
+// hangs behind the deck.
+function foreground() {
+  const { W, H } = STAGE;
+  const c = new Canvas(W, H);
+  drawAudience(c);
+  drawStage(c);
+  drawPodium(c);
+  drawFootlights(c);
+  drawProscenium(c);
+  drawValance(c, W);
+  return c;
+}
+
 function lerpCol(a, b, t, scale = 1) {
   return [
     Math.round((a[0] + (b[0] - a[0]) * t) * scale),
@@ -631,6 +650,7 @@ function text(c, str, x, y, scale, color) {
 
 // ---- run ---------------------------------------------------------------
 save("src/assets/art/stage.png", background());
+save("src/assets/art/stage-fg.png", foreground());
 save("src/assets/art/conductor.png", conductorSprite());
 save("src/assets/art/lead.png", sectionSprite("trumpet", HUE.lead, 3));
 save("src/assets/art/harmony.png", sectionSprite("violin", HUE.harmony, 3));

@@ -4,6 +4,7 @@ import { SECTIONS } from "../lib/instrument.ts";
 import { DEFAULT_BPM, DEFAULT_STEPS } from "../lib/sequencer.ts";
 
 import stage from "../assets/art/stage.png";
+import stageFg from "../assets/art/stage-fg.png";
 import conductor from "../assets/art/conductor.png";
 import lead from "../assets/art/lead.png";
 import harmony from "../assets/art/harmony.png";
@@ -126,6 +127,19 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
           ))
         }
       </div>
+
+      <!-- Front-of-house overlay: the stage platform, frame and crowd, painted
+           again on their own transparent layer above the beams so the deck cuts
+           off each spotlight's lower end. This is what makes the beams read as
+           coming from behind the top section rather than washing over its face. -->
+      <img
+        class="stage-fg"
+        src={stageFg.src}
+        alt=""
+        width={stageFg.width}
+        height={stageFg.height}
+        aria-hidden="true"
+      />
 
       {
         SECTIONS.filter((s) => s.id in spot).map((section) => (
