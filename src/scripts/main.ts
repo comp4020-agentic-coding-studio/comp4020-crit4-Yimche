@@ -33,17 +33,9 @@ const editorTitle = document.querySelector<HTMLElement>("[data-editor-title]");
 const CONTROL =
   "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done]";
 
-let started = false;
-
 async function activate(el: Element): Promise<void> {
   await engine.wake(); // any interaction is the user gesture the autoplay policy needs
   dismissInvite();
-  // The very first gesture brings the orchestra alive. After that, only the
-  // transport's Play/Stop starts and stops it, so Play always restarts cleanly.
-  if (!started) {
-    started = true;
-    if (!el.hasAttribute("data-transport")) engine.start();
-  }
 
   if (el instanceof HTMLElement && el.hasAttribute("data-cell")) {
     const section = el.dataset.section ?? "";
@@ -130,6 +122,9 @@ function openEditor(sectionId: string, groupEl: HTMLElement): void {
     rack.toggleAttribute("hidden", rack.dataset.rack !== sectionId);
   if (editorTitle) editorTitle.textContent = label.get(sectionId) ?? "Part";
   editor.dataset.section = sectionId;
+  // Tint the popup's frame with this section's stage-light colour, so the card
+  // reads as belonging to the musician you tapped.
+  editor.style.setProperty("--hue", `var(--hue-${sectionId})`);
   editor.removeAttribute("hidden");
   for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
     group.classList.toggle("editing", group.dataset.group === sectionId);
@@ -152,7 +147,9 @@ function positionEditor(groupEl: HTMLElement): void {
     margin,
     window.innerWidth - editor.offsetWidth - margin,
   );
-  const top = Math.max(margin, g.top - editor.offsetHeight - 10);
+  // Clear the musician's dashed selection outline: a gap between the card and
+  // the tapped player, rather than the two touching.
+  const top = Math.max(margin, g.top - editor.offsetHeight - 20);
   editor.style.left = `${Math.round(left)}px`;
   editor.style.top = `${Math.round(top)}px`;
 }
@@ -196,6 +193,7 @@ function refreshLights(): void {
   for (const beam of document.querySelectorAll<HTMLElement>("[data-beam]"))
     beam.classList.toggle("on", live.has(beam.dataset.beam ?? ""));
   theatre?.classList.toggle("full", live.size === SECTIONS.length);
+  updateGroupsEnabled();
   // Stopping kills every light: also clear the per-beat flashes and the
   // playhead, so nothing is left glowing from the last step that sounded.
   if (!running) {
@@ -203,6 +201,16 @@ function refreshLights(): void {
     for (const cell of document.querySelectorAll(".cell.beat")) cell.classList.remove("beat");
     painted = null;
   }
+}
+
+// The musicians stay locked until the show has actually started: you wake the
+// conductor and press Play first. Once it has run, they stay unlocked so you can
+// still edit a part while stopped.
+let groupsUnlocked = false;
+function updateGroupsEnabled(): void {
+  if (!groupsUnlocked && engine.isRunning) groupsUnlocked = true;
+  for (const g of document.querySelectorAll<HTMLButtonElement>("[data-group]"))
+    g.disabled = !groupsUnlocked;
 }
 
 let painted: number | null = null;

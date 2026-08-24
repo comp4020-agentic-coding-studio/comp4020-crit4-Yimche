@@ -211,6 +211,12 @@ header nav {
   outline-offset: 4px;
 }
 
+/* Locked until the show starts: no pointer cursor, so a musician tapped before
+   Play reads as not yet playable. Their dim sprite already carries the state. */
+.group:disabled {
+  cursor: default;
+}
+
 .group:focus-visible,
 .conductor:focus-visible {
   outline: var(--pixel) solid #fff;
@@ -250,7 +256,7 @@ header nav {
 .invite {
   position: absolute;
   left: 50%;
-  bottom: 30%;
+  bottom: 52%;
   transform: translateX(-50%);
   margin: 0;
   padding: 0.7rem 1rem;
@@ -290,7 +296,8 @@ header nav {
   gap: 0.3rem;
   padding: 0.35rem;
   background: color-mix(in srgb, var(--ink) 86%, transparent);
-  border: var(--pixel) solid var(--line);
+  /* Edged in the conductor's own warm light, matching his spotlight. */
+  border: var(--pixel) solid #fff3cf;
   box-shadow: var(--pixel) var(--pixel) 0 var(--line);
   white-space: nowrap;
 }
@@ -304,7 +311,7 @@ header nav {
   width: var(--pixel);
   height: calc(2 * var(--pixel));
   transform: translateX(-50%);
-  background: var(--line);
+  background: #fff3cf;
 }
 
 .podium button {
@@ -353,8 +360,8 @@ header nav {
 
 /* The music popup floats above the tapped musician's head on the stage; main.ts
    sets its left/top from the group's rect and clamps it on screen. A compact
-   velvet card with a gold edge, so a full part reads as hanging over that
-   player rather than a full-width sheet, and stands clear of the busy stage. */
+   velvet card whose edge is lit in that section's own colour (main.ts sets
+   --hue), so the popup reads as belonging to the musician it hangs over. */
 .sheet {
   pointer-events: auto;
   max-width: 92vw;
@@ -362,7 +369,7 @@ header nav {
   overflow: auto;
   padding: 0.5rem 0.6rem 0.6rem;
   background: color-mix(in srgb, var(--ink) 88%, transparent);
-  border: var(--pixel) solid #e7b23a;
+  border: var(--pixel) solid var(--hue, #e7b23a);
   box-shadow: var(--pixel) var(--pixel) 0 var(--line);
 }
 

@@ -148,6 +148,7 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
             data-group={section.id}
             data-play
             type="button"
+            disabled
             aria-haspopup="dialog"
             aria-label={`Write the ${section.label} part`}
             style={`left:${spot[section.id].left}%;bottom:${spot[section.id].bottom}%;width:${spot[section.id].w}%;--hue:var(--hue-${section.id})`}
