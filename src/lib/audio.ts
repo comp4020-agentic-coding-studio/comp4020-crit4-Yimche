@@ -48,9 +48,10 @@ export class AudioEngine {
     return this.ctx !== null && this.ctx.state === "running";
   }
 
-  /** The first-gesture handshake the autoplay policy requires: build the
-   *  context lazily, resume it, and start the loop so the metronome ticks and
-   *  the playhead moves the instant the orchestra wakes. */
+  /** The first-gesture handshake the autoplay policy requires: build the context
+   *  lazily and resume it, so sound is unlocked. It does NOT start the transport
+   *  loop; that is the caller's decision (the first wake starts it, Stop halts
+   *  it, Play resumes it), so pressing Play never fights an auto-start here. */
   async wake(): Promise<void> {
     if (!this.ctx) {
       const Ctor: typeof AudioContext =
@@ -67,7 +68,6 @@ export class AudioEngine {
       this.pulse25 = makePulse(this.ctx, 0.25);
     }
     if (this.ctx.state !== "running") await this.ctx.resume();
-    if (!this.running) this.start();
   }
 
   start(): void {

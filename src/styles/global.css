@@ -172,8 +172,9 @@ header nav {
   opacity: 0.8;
 }
 
-/* The director's beam comes up the moment the orchestra wakes. */
-.stage.awake .beam[data-beam="director"] {
+/* The director's beam is up whenever the show is running; Stop takes it down
+   with every other light, Play brings them all back. */
+.stage.running .beam[data-beam="director"] {
   opacity: 0.5;
 }
 
@@ -281,7 +282,7 @@ header nav {
 .podium {
   position: absolute;
   left: 37%;
-  bottom: 58%;
+  bottom: 40%;
   transform: translateX(-50%);
   z-index: 6;
   display: flex;
@@ -345,25 +346,24 @@ header nav {
 .editor {
   position: fixed;
   left: 0;
-  right: 0;
-  bottom: 0;
+  top: 0;
   z-index: 20;
-  display: flex;
-  justify-content: center;
-  pointer-events: none; /* the stage above stays clickable to switch parts */
+  pointer-events: none; /* the stage stays clickable to switch parts */
 }
 
-/* A floating panel with no chrome: transparent, no slide, it just appears over
-   the scene. The cells and buttons carry their own backing, so the parts read
-   without a solid sheet behind them. */
+/* The music popup floats above the tapped musician's head on the stage; main.ts
+   sets its left/top from the group's rect and clamps it on screen. A compact
+   velvet card with a gold edge, so a full part reads as hanging over that
+   player rather than a full-width sheet, and stands clear of the busy stage. */
 .sheet {
   pointer-events: auto;
-  width: min(1100px, 96vw);
-  max-height: 62vh;
+  max-width: 92vw;
+  max-height: 60vh;
   overflow: auto;
-  margin: 0 0.5rem 0.5rem;
-  padding: 0.8rem 1rem 1rem;
-  background: transparent;
+  padding: 0.5rem 0.6rem 0.6rem;
+  background: color-mix(in srgb, var(--ink) 88%, transparent);
+  border: var(--pixel) solid #e7b23a;
+  box-shadow: var(--pixel) var(--pixel) 0 var(--line);
 }
 
 .sheet-head {
@@ -404,8 +404,8 @@ header nav {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(16, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(16, 24px);
+  gap: 3px;
 }
 
 /* Warm, theatre-matched cells: dark velvet-plum wells, brass edges, downbeats
@@ -455,8 +455,7 @@ header nav {
    stay thumb-sized. */
 @media (max-width: 640px) {
   .grid {
-    grid-template-columns: repeat(16, 34px);
-    overflow-x: auto;
+    grid-template-columns: repeat(16, 30px);
   }
   .sheet {
     max-height: 70vh;

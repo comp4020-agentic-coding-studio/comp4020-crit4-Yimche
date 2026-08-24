@@ -33,9 +33,17 @@ const editorTitle = document.querySelector<HTMLElement>("[data-editor-title]");
 const CONTROL =
   "[data-cell],[data-group],[data-conductor],[data-transport],[data-tempo],[data-done]";
 
+let started = false;
+
 async function activate(el: Element): Promise<void> {
   await engine.wake(); // any interaction is the user gesture the autoplay policy needs
   dismissInvite();
+  // The very first gesture brings the orchestra alive. After that, only the
+  // transport's Play/Stop starts and stops it, so Play always restarts cleanly.
+  if (!started) {
+    started = true;
+    if (!el.hasAttribute("data-transport")) engine.start();
+  }
 
   if (el instanceof HTMLElement && el.hasAttribute("data-cell")) {
     const section = el.dataset.section ?? "";
@@ -48,7 +56,7 @@ async function activate(el: Element): Promise<void> {
   }
   if (el instanceof HTMLElement && el.dataset.group) {
     bounce(el);
-    openEditor(el.dataset.group);
+    openEditor(el.dataset.group, el);
     return;
   }
   if (el.hasAttribute("data-conductor")) {
@@ -112,7 +120,11 @@ function closeTransportPanel(): void {
 
 // ---- the music layer: hidden until a musician is picked -----------------
 
-function openEditor(sectionId: string): void {
+// The group the popup currently belongs to, kept so it can be re-anchored above
+// the same musician when the viewport changes.
+let editingGroup: HTMLElement | null = null;
+
+function openEditor(sectionId: string, groupEl: HTMLElement): void {
   if (!editor) return;
   for (const rack of editor.querySelectorAll<HTMLElement>("[data-rack]"))
     rack.toggleAttribute("hidden", rack.dataset.rack !== sectionId);
@@ -121,9 +133,32 @@ function openEditor(sectionId: string): void {
   editor.removeAttribute("hidden");
   for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
     group.classList.toggle("editing", group.dataset.group === sectionId);
+  editingGroup = groupEl;
+  positionEditor(groupEl);
   editor
     .querySelector<HTMLElement>(`[data-rack="${sectionId}"] .cell`)
     ?.focus();
+}
+
+// Float the popup above the tapped musician's head, centred on them, then clamp
+// it to the viewport so a wide part never runs off screen. Fixed positioning
+// keeps it clear of the stage's own overflow clip.
+function positionEditor(groupEl: HTMLElement): void {
+  if (!editor) return;
+  const g = groupEl.getBoundingClientRect();
+  const margin = 8;
+  const left = clamp(
+    g.left + g.width / 2 - editor.offsetWidth / 2,
+    margin,
+    window.innerWidth - editor.offsetWidth - margin,
+  );
+  const top = Math.max(margin, g.top - editor.offsetHeight - 10);
+  editor.style.left = `${Math.round(left)}px`;
+  editor.style.top = `${Math.round(top)}px`;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(v, Math.max(lo, hi)));
 }
 
 function closeEditor(): void {
@@ -135,6 +170,7 @@ function closeEditor(): void {
     ?.focus();
   for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
     group.classList.remove("editing");
+  editingGroup = null;
 }
 
 // ---- transport + lighting (derived from the model) ----------------------
@@ -149,14 +185,24 @@ function syncTransport(): void {
 // Lights are recomputed from the model, never stored, so a lit musician can't
 // drift from what is actually scheduled.
 function refreshLights(): void {
-  const live = engine.isRunning ? new Set(activeSections(state)) : new Set<string>();
+  const running = engine.isRunning;
+  const live = running ? new Set(activeSections(state)) : new Set<string>();
+  // The whole rig hangs off the running state: Stop clears it, Play brings it
+  // back. The director beam is the one light not keyed to a section, so it rides
+  // the `running` class in CSS rather than the live set below.
+  theatre?.classList.toggle("running", running);
   for (const group of document.querySelectorAll<HTMLElement>("[data-group]"))
     group.classList.toggle("lit", live.has(group.dataset.group ?? ""));
-  // The truss beams follow the same live set (the director beam, keyed
-  // "director", is never in it and stays on the CSS awake rule instead).
   for (const beam of document.querySelectorAll<HTMLElement>("[data-beam]"))
     beam.classList.toggle("on", live.has(beam.dataset.beam ?? ""));
   theatre?.classList.toggle("full", live.size === SECTIONS.length);
+  // Stopping kills every light: also clear the per-beat flashes and the
+  // playhead, so nothing is left glowing from the last step that sounded.
+  if (!running) {
+    for (const el of document.querySelectorAll(".flash")) el.classList.remove("flash");
+    for (const cell of document.querySelectorAll(".cell.beat")) cell.classList.remove("beat");
+    painted = null;
+  }
 }
 
 let painted: number | null = null;
@@ -240,6 +286,13 @@ function walkGrid(cell: HTMLElement, key: string): boolean {
   next?.focus();
   return next !== null;
 }
+
+// Keep an open popup anchored over its musician when the viewport changes, so
+// the part survives a resize where the reader expects it.
+window.addEventListener("resize", () => {
+  if (editor && !editor.hasAttribute("hidden") && editingGroup)
+    positionEditor(editingGroup);
+});
 
 // Cold start: transport reads "Play", stage dim, invite showing.
 syncTransport();
