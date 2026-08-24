@@ -37,10 +37,16 @@ body {
   font-family: var(--retro);
   -webkit-font-smoothing: none;
   overflow-x: hidden;
+  /* An instrument, not a document: a drag across the scenery should never leave
+     a text/image selection highlight behind. */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 img {
   image-rendering: pixelated;
+  /* The scenery is painted, not draggable: no ghost image on a click-drag. */
+  -webkit-user-drag: none;
 }
 
 /* Keep the nav landmark for the invariant, out of the immersive view. */
