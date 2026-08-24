@@ -133,17 +133,24 @@ function background() {
   // Drawn before the curtain and stage so both hang and sit in front of it.
   drawStageBackWall(c);
 
-  // The curtain legs are drawn FIRST, so the stage and its apron paint over
-  // their lower ends: the drapes read as hanging behind the stage, ending behind
-  // the top section rather than in front of it.
-  drawCurtainLegs(c);
+  // The left gilt frame hangs behind the stage: drawn before the deck so the
+  // stage body paints over its lower end. The right drape starts here too, its
+  // foot tucked behind the stage; the front-of-house layer redraws its upper
+  // length over the deck.
+  drawLeftPillar(c);
+  drawRightLeg(c);
 
   // The overhead beams hang from behind, so the top deck occludes their lower
-  // ends. Drawn before the stage for the same reason the curtain legs are.
+  // ends. Drawn before the stage for the same reason the curtain is.
   drawAmbientBeams(c);
 
   // Auditorium: raked rows of red velvet seats on the left.
   drawAudience(c);
+
+  // The left drape lifts in front of the crowd but still behind the stage: drawn
+  // after the audience so it covers the crowd's stage-side edge, and before the
+  // deck so the stage still hides its foot.
+  drawLeftLeg(c);
 
   // Stage: a raised, tiered platform the orchestra stands on.
   drawStage(c);
@@ -172,9 +179,10 @@ function foreground() {
   drawStage(c);
   drawPodium(c);
   drawFootlights(c);
-  // Curtain legs over the stage so the drapes frame the opening full length,
-  // then the gilt frame and valance over their tops.
-  drawCurtainLegs(c);
+  // Only the RIGHT drape frames over the stage here; the left frame and drape
+  // live in the background layer, behind the deck. The right gilt pillar and the
+  // arch come with the proscenium, the valance over their tops.
+  drawRightLeg(c);
   drawProscenium(c);
   drawValance(c, W);
   return c;
@@ -387,13 +395,18 @@ function drawGiltPillar(c, px, dir) {
   c.vline(dir > 0 ? x + 5 : x, PROS.archY, H - PROS.archY, C.goldLo);
 }
 
-// Both curtain legs and the left pillar, drawn before the stage so the stage
-// body paints over their lower ends: the drapes tuck behind the stage and end
-// behind the top section. The right leg mirrors the left, hung at the rightmost
-// edge just inside the far pillar.
-function drawCurtainLegs(c) {
+// The curtain in separable pieces, so the page can layer each one independently.
+// The left gilt frame and its drape live only in the background, behind the
+// stage; the right drape is drawn behind the stage AND redrawn in the
+// front-of-house layer so it frames the opening over the deck. Each leg is hung
+// just inside its pillar.
+function drawLeftPillar(c) {
   drawGiltPillar(c, PROS.leftX, 1);
+}
+function drawLeftLeg(c) {
   drawLeg(c, PROS.leftX + 6, PROS.archY + 4, CURTAIN_HEM, 20);
+}
+function drawRightLeg(c) {
   drawLeg(c, PROS.rightX - 6 - 20, PROS.archY + 4, CURTAIN_HEM, 20);
 }
 
@@ -444,12 +457,12 @@ function beam(c, apexX, apexY, footX, footY) {
 
 function drawValance(c, W) {
   // Grand red valance across the very top, scalloped lower edge, gold fringe.
-  // Deep enough that its scalloped edge drapes over the top of the gilt frame
-  // and the curtain tops, so the frame reads as hanging from beneath it with no
-  // dark gap between the two.
-  const valH = 22;
+  // Hangs well down over the opening: its arched scallops droop into the top of
+  // the frame so the gilt reads as hanging from beneath it, and the arcs
+  // themselves reach a good way down the proscenium.
+  const valH = 34;
   for (let x = 0; x < W; x++) {
-    const scallop = Math.round(Math.abs(Math.sin(x / 14)) * 9);
+    const scallop = Math.round(Math.abs(Math.sin(x / 14)) * 13);
     const fold = Math.sin(x / 6) * 0.5 + 0.5;
     for (let y = 0; y < valH - scallop; y++) {
       const shade = 0.72 + fold * 0.28 - (y / valH) * 0.18;
