@@ -329,6 +329,13 @@ header nav {
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  /* The conductor's wide cone is centred at the very left edge of the stage
+     opening, so its left half spills past the proscenium frame and washes over
+     the house seats. Clip the rig at the frame's inner edge: the beam still
+     lights the conductor on the apron, but stops at the curtain frame instead
+     of bleeding into the audience. The section beams all sit well right of this,
+     so only the director's spill is trimmed. */
+  clip-path: inset(0 0 0 34%);
 }
 
 .beam {
