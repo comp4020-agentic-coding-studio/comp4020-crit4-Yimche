@@ -32,14 +32,9 @@ const card = new URL(
     <meta property="og:image" content={card} />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Retro display font; monospace fallback if it fails to load, so the
-         layout never depends on the network at build or first paint. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
-      rel="stylesheet"
-    />
+    <!-- The typeface (Departure Mono) is self-hosted and declared in global.css,
+         so the head needs no font network request; a monospace fallback covers
+         the swap while the webfont loads. -->
   </head>
   <body>
     <slot />

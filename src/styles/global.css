@@ -2,6 +2,21 @@
    crowd, conductor and each section are pixel-art image layers; the lighting is
    CSS driven from the pure model, so a lit musician always matches the sound. */
 
+/* Departure Mono (Helena Zhang & Tobias Fried, MIT) is the one typeface across
+   the whole instrument. Self-hosted, so there is no external font request and
+   nothing to break offline or under the Pages base path. The relative url()s are
+   Vite-fingerprinted at build, so they carry the base path automatically. The
+   licence rides in public/fonts/DepartureMono-LICENSE.txt. */
+@font-face {
+  font-family: "Departure Mono";
+  src:
+    url("../assets/fonts/DepartureMono-Regular.woff2") format("woff2"),
+    url("../assets/fonts/DepartureMono-Regular.woff") format("woff");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --ink: #0a0a16;
   --panel: #141a3a;
@@ -16,7 +31,11 @@
   --hue-perc: #b98bff;
 
   --pixel: 4px;
-  --retro: "Press Start 2P", ui-monospace, "Courier New", monospace;
+  /* One typeface everywhere. --retro is the display/UI face, --mono the code
+     face (the Save panel's source block); both are Departure Mono now, with a
+     monospace fallback stack in case the webfont is still loading. */
+  --retro: "Departure Mono", ui-monospace, "Courier New", monospace;
+  --mono: "Departure Mono", ui-monospace, "Courier New", monospace;
 }
 
 * {
