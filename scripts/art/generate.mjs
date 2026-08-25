@@ -177,7 +177,7 @@ function foreground() {
   drawLeftPillar(c);
   drawLeftLeg(c);
   tuckLeftLegBehindPlanks(c);
-  drawStage(c);
+  drawStage(c, { stands: false }); // stands live in the background, behind the beam
   drawPodium(c);
   drawFootlights(c);
   // The RIGHT drape frames over the stage here; the right gilt pillar and the
@@ -346,7 +346,12 @@ const BACK_DECK_TOP = UPPER_TOP + 2;
 // clean layers: a raised back deck (harmony + perc) stepping down to a front
 // deck (conductor + lead + bass). Below is the footlit apron and dark
 // understage.
-function drawStage(c) {
+// `stands` draws a slim music stand behind each section. They belong ONLY in the
+// background: there they sit behind the spotlight beam and read as a lit detail.
+// The foreground redraws the deck OVER the beam, so a stand drawn there paints a
+// black pole across the lit musician (a stray vertical line); the foreground
+// passes stands:false to leave the front of the lit performer clean.
+function drawStage(c, { stands = true } = {}) {
   const { W, H } = STAGE;
   const x0 = STAGE_LEFT;
   // solid stage body (dark warm wood), from the crown of the arched back deck
@@ -359,12 +364,14 @@ function drawStage(c) {
   // front tier over it
   drawTier(c, x0, W, BACK_DECK_TOP);
   drawTier(c, x0, W, LOWER_TOP);
-  // a slim music stand behind each section
-  for (const { x0: a, x1: b, top } of RISERS) {
-    const sx = Math.round((a + b) / 2) + 12;
-    c.vline(sx, top - 11, 11, C.black);
-    c.rect(sx - 4, top - 14, 9, 3, C.woodLo);
-    c.hline(sx - 4, top - 14, 9, C.gold);
+  // a slim music stand behind each section (background only; see stands note)
+  if (stands) {
+    for (const { x0: a, x1: b, top } of RISERS) {
+      const sx = Math.round((a + b) / 2) + 12;
+      c.vline(sx, top - 11, 11, C.black);
+      c.rect(sx - 4, top - 14, 9, 3, C.woodLo);
+      c.hline(sx - 4, top - 14, 9, C.gold);
+    }
   }
   // curved apron front edge (red skirt) tracing the same arc, then understage
   for (let x = x0; x < W; x++) {
