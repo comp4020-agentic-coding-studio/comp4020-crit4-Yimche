@@ -48,6 +48,14 @@ body {
   height: 100%;
 }
 
+/* One knob for the whole type scale. The type sizes are rem-based clamps whose
+   rem bounds govern at both marked resolutions (1920x1080 and 390x844), so
+   lifting the root 16px to 24px scales every label ~1.5x. Pixel-art metrics are
+   fixed px (--pixel and friends), so the scenery is untouched. */
+html {
+  font-size: 150%;
+}
+
 body {
   background:
     radial-gradient(circle at 50% 12%, #241247 0%, transparent 60%),
