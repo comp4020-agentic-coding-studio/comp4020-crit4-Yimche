@@ -6,6 +6,7 @@ import { TUNES } from "../lib/presets.ts";
 
 import stage from "../assets/art/stage.png";
 import stageFg from "../assets/art/stage-fg.png";
+import arcs from "../assets/art/arcs.png";
 import valance from "../assets/art/valance.png";
 import conductor from "../assets/art/conductor.png";
 import lead from "../assets/art/lead.png";
@@ -79,22 +80,26 @@ const beamHeight = (bottom: number) => 100 - TRUSS - Math.max(0, bottom - 6);
 // scales with length so every cone keeps the same opening angle (width is % of
 // the stage width, height is % of its height; the 0.3 factor matches them).
 const beamWidth = (height: number) => Math.round(height * 0.3);
-const beams = [
-  ...Object.entries(spot).map(([id, s]) => ({
-    id,
-    left: s.left,
-    height: beamHeight(s.bottom),
-    width: beamWidth(beamHeight(s.bottom)),
-    hue: `var(--hue-${id})`,
-  })),
-  {
-    id: "director",
-    left: 37,
-    height: beamHeight(conductorBottom),
-    width: beamWidth(beamHeight(conductorBottom)),
-    hue: "#fff3cf",
-  },
-];
+// The four section beams hang from the truss BEHIND the stage, so the deck
+// overlay cuts their lower ends: they light musicians standing upstage.
+const beams = Object.entries(spot).map(([id, s]) => ({
+  id,
+  left: s.left,
+  height: beamHeight(s.bottom),
+  width: beamWidth(beamHeight(s.bottom)),
+  hue: `var(--hue-${id})`,
+}));
+
+// The conductor stands DOWNSTAGE, in front of the proscenium, so his beam is a
+// front follow-spot: rendered in front of the frame, deck and curtain (unlike
+// the section beams) so it actually lands on him rather than being occluded.
+const director = {
+  id: "director",
+  left: 37,
+  height: beamHeight(conductorBottom),
+  width: beamWidth(beamHeight(conductorBottom)),
+  hue: "#fff3cf",
+};
 
 const rowsTopDown = (rows: number) =>
   Array.from({ length: rows }, (_, i) => rows - 1 - i);
@@ -233,6 +238,33 @@ const cols = Array.from({ length: DEFAULT_STEPS }, (_, i) => i);
           </button>
         ))
       }
+
+      <!-- The conductor's follow-spot: a front spotlight, so it sits ABOVE the
+           frame/deck/curtain overlay (unlike the section rig) and BELOW the
+           conductor sprite that follows, landing the cone on him downstage. Its
+           own layer clips the left edge at the proscenium so the spot stops at
+           the frame instead of spilling into the house. -->
+      <div class="director-beam" aria-hidden="true">
+        <span
+          class="beam"
+          data-beam={director.id}
+          style={`left:${director.left}%;top:${TRUSS}%;height:${director.height}%;width:${director.width}%;--hue:${director.hue}`}
+        />
+      </div>
+
+      <!-- The rooftop arcs again, ABOVE the follow-spot, so the scalloped valance
+           occludes the cone's upper end and it reads as hanging from behind the
+           valance. This is a valance-only layer (just the arcs, transparent
+           everywhere else), drawn from the same geometry as the baked valance so
+           it lines up pixel-for-pixel and covers nothing below the arcs. -->
+      <img
+        class="director-valance"
+        src={arcs.src}
+        alt=""
+        width={arcs.width}
+        height={arcs.height}
+        aria-hidden="true"
+      />
 
       <button
         class="conductor"

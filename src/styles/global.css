@@ -340,13 +340,36 @@ header nav {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  /* The conductor's wide cone is centred at the very left edge of the stage
-     opening, so its left half spills past the proscenium frame and washes over
-     the house seats. Clip the rig at the frame's inner edge: the beam still
-     lights the conductor on the apron, but stops at the curtain frame instead
-     of bleeding into the audience. The section beams all sit well right of this,
-     so only the director's spill is trimmed. */
-  clip-path: inset(0 0 0 34%);
+}
+
+/* The conductor's follow-spot rides its own layer ABOVE the front-of-house
+   overlay (z-index 1) and BELOW the conductor sprite (z-index 2), so the cone
+   lands on him downstage instead of being cut off behind the frame like the
+   section beams. Clipping the left edge at the proscenium keeps the spot on the
+   apron rather than spilling over the house seats. */
+.director-beam {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  /* Left edge stops at the curtain frame's inner edge (x=126 of 384 = 32.8%),
+     so the spot reaches the frame without washing over the house seats. */
+  clip-path: inset(0 0 0 32.8%);
+}
+
+/* The valance-only arcs layer, stacked above the follow-spot so the scalloped
+   rooftop arcs cut off the cone's upper end. It is the arcs alone on a
+   transparent field (see arcs.png), aligned to the baked valance, so no clip is
+   needed: the scallop shape does the occluding and everything below it is
+   transparent, leaving the cone's body untouched. */
+.director-valance {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 3;
+  pointer-events: none;
 }
 
 .beam {

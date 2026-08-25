@@ -522,6 +522,18 @@ function drawValance(c, W) {
   c.hline(0, 0, W, C.curtainLo);
 }
 
+// The valance alone on a full-stage transparent canvas, so the page can lay the
+// arcs BACK OVER the conductor's front follow-spot: the scalloped edge occludes
+// the cone's top exactly as the baked valance does the section beams, while the
+// rest stays transparent so it covers nothing else (no box, no curtain leg over
+// the light). Same coordinates as foreground()'s valance, so it lines up.
+function stageArcs() {
+  const { W, H } = STAGE;
+  const c = new Canvas(W, H);
+  drawValance(c, W);
+  return c;
+}
+
 // A single seamless tile of the same grand valance, for the greeter's pelmet.
 // It copies drawValance's arc verbatim: the scallop abs(sin(pi*x/44)) is the
 // integer-period twin of abs(sin(x/14)) (1/14 == pi/44), so one lobe fills the
@@ -753,6 +765,7 @@ save("src/assets/art/harmony.png", sectionSprite("violin", HUE.harmony, 3));
 save("src/assets/art/bass.png", sectionSprite("bass", HUE.bass, 2));
 save("src/assets/art/perc.png", sectionSprite("drum", HUE.perc, 2));
 save("src/assets/art/valance.png", greeterValanceTile());
+save("src/assets/art/arcs.png", stageArcs());
 save("public/card.png", card());
 
 // Contact sheet that composites the sprites onto the scene at their real page
